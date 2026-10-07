@@ -149,6 +149,9 @@ import subprocess  # noqa: E402
 
 local_models = load("local_models")
 text_tasks = load("text_tasks")
+task_packs = load("task_packs")
+
+FIXTURES = ROOT / "tests" / "fixtures"
 
 
 def run_try(request: dict, env: dict | None = None) -> dict:
@@ -315,6 +318,88 @@ def test_text_task_is_scored_against_a_local_model(fake_ollama, monkeypatch):
     as_json = local_models.answer_text_task("fake:latest",
                                             text_tasks.TextTask("json-1", 'Reply with JSON.\n{"vat": 7.7}', "json", {"vat": 7.7}))
     assert as_json["passed"]
+
+
+# ---------------------------------------------------------------- task packs
+
+def _pack(**overrides) -> dict:
+    pack = {"id": "p1", "name": "Pack one", "tasks": [
+        {"id": "exact-1", "input": "Reply ja.", "expected": "ja", "check": "exact"},
+        {"id": "json-1", "input": "Reply JSON.", "expected": {"vat": 7.7}, "check": "json"},
+        {"id": "num-1", "input": "Reply the total.", "expected": 42.0, "check": "numeric", "tolerance": 0.5},
+    ]}
+    pack.update(overrides)
+    return pack
+
+
+def test_valid_pack_loads_into_text_tasks():
+    pack = task_packs.validate_pack(_pack())
+    assert pack.pack_id == "p1" and pack.name == "Pack one"
+    assert [t.task_id for t in pack.tasks] == ["exact-1", "json-1", "num-1"]
+    numeric = pack.tasks[2]
+    assert numeric.check == "numeric" and numeric.tolerance == 0.5
+    # the loaded tasks are the B-03 TextTask kind and score through the same rules
+    assert text_tasks.score(pack.tasks[0], "  ja ")["passed"]
+
+
+def test_example_fixture_pack_loads_from_disk():
+    pack = task_packs.load_pack(FIXTURES / "example_pack.json")
+    assert pack.pack_id == "example-1" and len(pack.tasks) == 3
+    assert {t.check for t in pack.tasks} == {"exact", "json", "numeric"}
+
+
+def test_missing_field_is_rejected_naming_task_and_field():
+    tasks = _pack()["tasks"]
+    del tasks[1]["expected"]
+    with pytest.raises(ValueError, match="task 'json-1' is missing required field 'expected'"):
+        task_packs.validate_pack(_pack(tasks=tasks))
+
+
+def test_unknown_check_type_is_rejected():
+    tasks = _pack()["tasks"]
+    tasks[0]["check"] = "regex"
+    with pytest.raises(ValueError, match="task 'exact-1': field 'check' must be one of"):
+        task_packs.validate_pack(_pack(tasks=tasks))
+
+
+def test_duplicate_task_id_is_rejected():
+    tasks = _pack()["tasks"]
+    tasks[1]["id"] = "exact-1"
+    with pytest.raises(ValueError, match="task 'exact-1': duplicate task id"):
+        task_packs.validate_pack(_pack(tasks=tasks))
+
+
+def test_numeric_expected_must_be_a_number():
+    tasks = _pack()["tasks"]
+    tasks[2]["expected"] = "lots"
+    with pytest.raises(ValueError, match="task 'num-1': field 'expected' must be a number"):
+        task_packs.validate_pack(_pack(tasks=tasks))
+
+
+def test_tolerance_only_applies_to_numeric_checks():
+    tasks = _pack()["tasks"]
+    tasks[0]["tolerance"] = 0.1
+    with pytest.raises(ValueError, match="task 'exact-1': field 'tolerance' applies only to a numeric check"):
+        task_packs.validate_pack(_pack(tasks=tasks))
+
+
+def test_pack_without_tasks_is_rejected():
+    with pytest.raises(ValueError, match="field 'tasks' must be a non-empty list"):
+        task_packs.validate_pack(_pack(tasks=[]))
+
+
+def test_pack_missing_id_is_rejected():
+    data = _pack()
+    del data["id"]
+    with pytest.raises(ValueError, match="pack: field 'id' must be a non-empty string"):
+        task_packs.validate_pack(data)
+
+
+def test_load_pack_rejects_invalid_json(tmp_path):
+    bad = tmp_path / "bad.json"
+    bad.write_text("{ not json")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        task_packs.load_pack(bad)
 
 
 # ---------------------------------------------------------------- Models page
