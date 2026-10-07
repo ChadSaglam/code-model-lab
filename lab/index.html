@@ -1,0 +1,1450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model Lab</title>
+<style>
+:root{
+  --bg:#0e1420; --surface:#161b26; --surface-2:#1d2433; --line:#2a3346;
+  --text:#eef2f7; --text-2:#b6c2d4; --muted:#8592a8;
+  --accent:#4cc9e8;
+  --s-increment:#3987e5; --s-double:#d95926; --s-even:#199e70;
+  --ok-bg:#12303d; --ok-text:#8fdcf5; --bad-bg:#3a2418; --bad-text:#f4b183;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:32px 24px 80px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:32px}
+h1{margin:0;font-size:34px;letter-spacing:-.5px}
+.sub{color:var(--text-2);margin:4px 0 0}
+.conn{font-size:14px;padding:6px 12px;border-radius:999px;background:var(--surface);color:var(--text-2);border:1px solid var(--line)}
+.conn.off{color:var(--bad-text);border-color:#6b3a22}
+section{margin-top:40px}
+h2{font-size:22px;margin:0 0 4px}
+.lead{color:var(--text-2);margin:0 0 16px;max-width:780px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;position:relative;min-width:0}
+.stage-n{font-family:var(--mono);color:var(--accent);font-size:14px;letter-spacing:2px}
+.stage h3{margin:4px 0 8px;font-size:20px}
+.stage p{margin:0 0 12px;color:var(--text-2);font-size:15px}
+.badge{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--text-2)}
+.badge.running{background:#12303d;color:var(--accent)}
+.badge.done{background:var(--ok-bg);color:var(--ok-text)}
+.badge.outside,.badge.failed{background:var(--bad-bg);color:var(--bad-text)}
+.bar{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden;margin:12px 0 6px}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:8px;transition:width .4s}
+.meta{font-size:13px;color:var(--muted);min-height:20px}
+.note{font-size:14px;color:var(--text-2);margin:10px 0 0}
+.err{font-size:14px;color:var(--bad-text);margin:10px 0 0}
+button{font:inherit;font-weight:600;font-size:15px;border-radius:10px;padding:10px 16px;border:1px solid transparent;cursor:pointer}
+button.primary{background:var(--accent);color:#08202a}
+button.primary:hover{filter:brightness(1.08)}
+button.ghost{background:transparent;color:var(--text-2);border-color:var(--line)}
+button.ghost:hover{color:var(--text);border-color:var(--muted)}
+button.warn{background:var(--bad-bg);color:var(--bad-text)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:14px;color:var(--text-2);margin:4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.sw.line{height:2px;width:18px;border-radius:2px;background:var(--text)}
+.tip{position:absolute;pointer-events:none;background:#0b0f17;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--text);white-space:nowrap;transform:translate(-50%,-110%);display:none;z-index:2}
+.empty{padding:48px 16px;text-align:center;color:var(--muted)}
+.facts{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:16px;padding:16px 20px}
+.facts div{display:flex;flex-direction:column;gap:2px}
+.facts b{font-size:22px}
+.facts span{font-size:13px;color:var(--muted)}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.stats span{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--text-2)}
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:24px}
+.big{font-size:56px;font-weight:700;letter-spacing:-1px;line-height:1}
+.big small{font-size:22px;color:var(--text-2);font-weight:500}
+.arrow{font-size:40px;color:var(--accent)}
+.label{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:13px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.ep{display:grid;grid-template-columns:minmax(200px,1fr) 1fr 1fr;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+@media (max-width:820px){.ep{grid-template-columns:1fr}}
+.ep .q{font-size:15px}
+.ep .q code{color:var(--muted)}
+pre{margin:0;font-family:var(--mono);font-size:13.5px;line-height:1.5;background:#0b0f17;border:1px solid var(--line);border-radius:10px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;color:var(--text)}
+pre .sig{color:var(--muted)}
+.res{display:flex;flex-direction:column;gap:6px}
+.pass,.fail{font-size:13px;font-weight:600;padding:2px 10px;border-radius:999px;align-self:flex-start}
+.pass{background:var(--ok-bg);color:var(--ok-text)}
+.fail{background:var(--bad-bg);color:var(--bad-text)}
+.filters{display:flex;gap:8px;margin:16px 0 4px}
+.filters button.on{background:var(--surface-2);color:var(--text);border-color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+.controls label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--text-2)}
+select{font:inherit;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.snaps{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.snaps label{display:inline-flex;align-items:center;gap:8px;font-size:14px;padding:6px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);cursor:pointer}
+.snaps label.off{opacity:.45;cursor:not-allowed}
+.journey{display:flex;gap:12px;overflow-x:auto;padding:4px 0 12px;margin-top:16px}
+.step{flex:0 0 260px;display:flex;flex-direction:column;gap:8px}
+.step h4{margin:0;font-size:15px}
+.step .t{font-size:12px;color:var(--muted)}
+details{margin-top:40px}
+summary{cursor:pointer;color:var(--text-2)}
+#log{max-height:320px;overflow:auto;margin-top:10px;font-size:12px}
+
+.expbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:16px 20px}
+.expbar .grow{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{font-size:13px;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--text-2)}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:16px}
+.form label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--text-2)}
+.form small{color:var(--muted);font-size:12.5px}
+input[type=text],input[type=number]{font:inherit;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.hidden{display:none !important}
+tr.pick{cursor:pointer}
+tr.pick:hover td{background:var(--surface-2)}
+tr.sel td{background:#1a2638}
+.best{font-size:12px;font-weight:700;color:var(--ok-text);margin-left:6px}
+.queue{font-size:14px;color:var(--text-2);margin:0 0 12px}
+
+.head-right{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs a{color:var(--text-2);text-decoration:none;font-weight:600;font-size:15px;padding:6px 14px;border-radius:9px}
+.tabs a.on{background:var(--surface-2);color:var(--text)}
+.tabs a:hover{color:var(--text)}
+body.mode-course .ladder-only{display:none !important}
+body.mode-ladder .course-only{display:none !important}
+body.mode-ladder #expbar{margin-top:32px}
+.field-label{font-size:14px;color:var(--text-2);display:block;margin-bottom:6px}
+.levels-pick small{display:block;margin-top:6px}
+.level-card h3{margin:4px 0 6px;font-size:19px}
+.level-card p{margin:0 0 10px;color:var(--text-2);font-size:14.5px}
+.level-card .fams{font-size:12.5px;color:var(--muted);margin-top:8px}
+.brow{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.brow:last-child{border-bottom:none}
+@media (max-width:640px){.brow{grid-template-columns:1fr}}
+.brow .bars{display:flex;flex-direction:column;gap:8px}
+.bline{display:grid;grid-template-columns:110px 1fr 120px;gap:12px;align-items:center;font-size:14px;color:var(--text-2)}
+.btrack{height:14px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.btrack i{display:block;height:100%;border-radius:4px}
+.bline b{color:var(--text);font-variant-numeric:tabular-nums}
+textarea{width:100%;font-family:var(--mono);font-size:13.5px;line-height:1.5;background:#0b0f17;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;resize:vertical}
+label.stack{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--text-2)}
+button.small{font-size:12.5px;padding:3px 10px;border-radius:8px;margin-left:6px}
+.custom-list{margin:0 0 8px;padding-left:18px;font-size:13.5px;color:var(--text-2)}
+.custom-list li{margin-bottom:6px}
+tr.ref td{color:var(--text-2);background:#141a26}
+td.num{white-space:nowrap}
+body:not(.mode-models) .models-only{display:none !important}
+body.mode-models main > :not(header):not(.models-only):not(details){display:none !important}
+body.mode-models main > section.models-only:first-of-type{margin-top:0}
+.vtag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:#2a2340;color:#c7b8ff;margin-left:6px}
+td.check{width:36px}
+td.check input,th.check input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.rank{color:var(--muted);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1 id="page-title">Model Lab</h1>
+    <p class="sub" id="page-sub">GLM-5.3-Flash teaching version · experiments run on your computer</p>
+  </div>
+  <div class="head-right">
+    <nav class="tabs" aria-label="Pages"><a href="/" id="tab-course">Model Lab</a><a href="/tasks" id="tab-ladder">Task Lab</a><a href="/models" id="tab-models">Models</a></nav>
+    <span class="conn" id="conn">Connecting…</span>
+  </div>
+</header>
+
+<section class="ladder-only" id="sec-levels" style="margin-top:0">
+  <h2>Difficulty levels</h2>
+  <p class="lead">Each level adds harder Python tasks, every one checked by hidden tests. A run trains one model on the levels you pick, so you can see where a 25.7M-parameter model stops keeping up.</p>
+  <div class="grid4" id="levels"></div>
+  <div class="card hidden" id="custom-form" style="margin-top:16px">
+    <div class="label">Add your own task · level 5</div>
+    <p class="note" style="margin-top:0">Write the function the way it should be solved, plus a few tests. It is checked right away; then it becomes a task type you can train on, test and try.</p>
+    <div class="form"><label>Description (one sentence) <input type="text" id="c-desc" maxlength="90" placeholder="Return the price with 8 percent VAT added, rounded down."></label></div>
+    <div class="grid2" style="margin-top:12px">
+      <label class="stack">Your function<textarea id="c-code" rows="7" spellcheck="false" placeholder="def with_vat(price):&#10;    return price * 108 // 100"></textarea></label>
+      <label class="stack">Tests, one per line:  input -> expected<textarea id="c-tests" rows="7" spellcheck="false" placeholder="100 -> 108&#10;50 -> 54&#10;0 -> 0"></textarea></label>
+    </div>
+    <p class="note">Rules: one function whose last line is <code>return ...</code>; no loops, imports or methods; only sum, len, abs, min, max, bool, int and str. Several inputs: <code>2, 5 -> 7</code>. Lists and text: <code>[1, 2] -> 3</code>, <code>'abc' -> 3</code>.</p>
+    <div class="actions"><button class="primary" id="c-save">Check and save</button><button class="ghost" id="c-cancel">Cancel</button></div>
+    <p class="err" id="c-error" role="alert"></p>
+  </div>
+</section>
+
+<div class="card expbar" id="expbar">
+  <span class="dot" id="exp-dot"></span>
+  <label class="controls"><select id="exp-select" aria-label="Experiment"></select></label>
+  <div class="chips grow" id="exp-chips"></div>
+  <button class="primary" id="new-exp-open">+ New experiment</button>
+  <button class="ghost hidden" id="exp-archive">Archive experiment</button>
+</div>
+
+<div class="card hidden" id="new-exp" style="margin-top:16px">
+  <div class="label" id="f-title">New experiment</div>
+  <p class="note" style="margin-top:0" id="f-intro">Change one or two settings, keep the rest. Everything else stays exactly like the course, so the results stay comparable.</p>
+  <div class="form ladder-only">
+    <div class="levels-pick"><span class="field-label">Difficulty levels</span><div class="snaps" id="f-levels" style="margin-top:0"></div>
+      <small id="f-size"></small></div>
+    <label>Pretraining steps <select id="f-pretrain_steps"></select><small>More steps = more practice on harder levels, but longer.</small></label>
+    <label>RL rounds <select id="f-rl_groups"></select><small>Each round = one task, several attempts.</small></label>
+  </div>
+  <div class="form">
+    <label>Name <input type="text" id="f-name" maxlength="40" placeholder="e.g. Lower RL temperature"></label>
+    <label>Pretraining
+      <select id="f-pretrain-from"></select>
+      <small id="f-reuse-note">Reusing skips stage 1. Only RL settings then differ.</small>
+    </label>
+  </div>
+  <div class="form" id="f-pretrain-fields">
+    <label>Pretraining seed <input type="number" id="f-seed" step="1"><small>Different seed = different random start.</small></label>
+    <label>Pretraining learning rate <input type="number" id="f-pretrain_lr" step="any"><small>How big each learning step is. Course: 0.0003</small></label>
+  </div>
+  <div class="form">
+    <label>RL learning rate <input type="number" id="f-rl_lr" step="any"><small>Course: 0.00005</small></label>
+    <label>RL sampling temperature <input type="number" id="f-temperature" step="any"><small>Lower = safer, more similar attempts. Course: 0.35</small></label>
+    <label>Attempts per task (group size) <input type="number" id="f-group_size" step="1"><small>More attempts = more chances to succeed, but slower. Course: 16</small></label>
+    <label>RL seed <input type="number" id="f-rl_seed" step="1"><small>Course: 31415</small></label>
+  </div>
+  <div class="actions">
+    <button class="primary" id="f-create-run">Create and run all ▶▶</button>
+    <button class="ghost" id="f-create">Create only</button>
+    <button class="ghost" id="f-cancel">Cancel</button>
+  </div>
+  <p class="err" id="f-error" role="alert"></p>
+</div>
+
+<div class="card empty hidden" id="no-runs" style="margin-top:16px">No Task Lab run yet. Click <b>+ New run</b> above, pick the levels and press "Create and run all".</div>
+
+<div id="exp-sections">
+<section>
+  <h2>Stages</h2>
+  <p class="lead">Stages of the selected run. Run them one by one, or click "Run all remaining" and walk away.</p>
+  <p class="queue" id="queue"></p>
+  <div class="actions" style="margin:0 0 16px"><button class="primary" id="run-all">Run all remaining ▶▶</button></div>
+  <div class="grid4" id="stages"></div>
+  <p class="err" id="action-error" role="alert"></p>
+</section>
+
+<section>
+  <h2 id="cmp-title">Compare experiments</h2>
+  <p class="lead">Every run side by side. Click a row to open it.</p>
+  <div class="card" style="overflow-x:auto"><table id="cmp-table"></table></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card">
+      <div class="label">Pretraining loss</div>
+      <div class="legend" id="ov-pt-legend"></div>
+      <div class="chart" id="ov-pt"></div>
+      <p class="note">Only runs with their own pretraining are drawn. Lower is better.</p>
+    </div>
+    <div class="card">
+      <div class="label">RL success rate (average of the last 12 rounds)</div>
+      <div class="legend" id="ov-rl-legend"></div>
+      <div class="chart" id="ov-rl"></div>
+      <p class="note">Share of attempts that passed all tests during RL. Higher is better.</p>
+    </div>
+  </div>
+</section>
+
+<section class="ladder-only">
+  <h2>Where the model breaks</h2>
+  <p class="lead">Unseen tasks solved per difficulty level, after pretraining and after RL, for the selected run.</p>
+  <div class="card" id="breaks"></div>
+</section>
+
+<section>
+  <h2>How this run improved</h2>
+  <p class="lead">Left: pretraining. Right: reinforcement learning. Both update live while a stage runs. Hover for details.</p>
+  <div class="card facts" id="model-facts"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="label">Pretraining · loss</div>
+      <div class="chart" id="pt-chart"></div>
+      <p class="note">Lower loss means the model predicts the next character better.</p>
+      <div class="stats" id="pt-stats"></div>
+    </div>
+    <div class="card">
+      <div class="label">Reinforcement learning · correct attempts per round</div>
+      <div class="legend" id="rl-legend"></div>
+      <div class="chart" id="rl-chart"></div>
+      <p class="note">Each bar is one round: the model writes several attempts for one task, and the bar shows how many passed the tests.</p>
+      <div class="stats" id="rl-stats"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Before / after</h2>
+  <p class="lead" id="eval-lead"></p>
+  <div id="eval"></div>
+</section>
+
+<section class="course-only">
+  <h2>Development journey</h2>
+  <p class="lead">Pick a task and let this experiment's model at different stages solve it. See the difference step by step, from random start to final model.</p>
+  <div class="card">
+    <div class="controls">
+      <label>Task type <select id="cmp-family"></select></label>
+      <label>Task no. <select id="cmp-index"></select></label>
+      <button class="primary" id="cmp-go">Compare</button>
+    </div>
+    <div class="snaps" id="snaps"></div>
+    <p class="note">The models run on your computer's CPU; each one takes a few seconds.</p>
+    <div id="cmp-out"></div>
+  </div>
+</section>
+</div>
+
+<section class="ladder-only">
+  <h2>Try a task yourself</h2>
+  <p class="lead">Pick any task, write your own solution and run its hidden tests, or let a model answer the same task and see exactly which tests pass.</p>
+  <div class="card">
+    <div class="controls">
+      <label>Task <select id="try-family"></select></label>
+      <label>Task no. <select id="try-index"><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option></select></label>
+    </div>
+    <div class="grid2" style="margin-top:16px">
+      <div>
+        <div class="label">Your solution</div>
+        <pre id="try-prompt">Loading…</pre>
+        <textarea id="try-code" rows="8" spellcheck="false" aria-label="Your solution"></textarea>
+        <div class="actions"><button class="primary" id="try-run">Run tests ▶</button><button class="ghost" id="try-ref">Show reference solution</button></div>
+      </div>
+      <div>
+        <div class="label">Or ask a model</div>
+        <div class="controls"><label>Model <select id="try-model"></select></label><button class="primary" id="try-ask">Ask ▶</button></div>
+        <p class="note" id="try-model-note">Local models come from Ollama; small-model snapshots come from your finished runs.</p>
+      </div>
+    </div>
+    <div id="try-out"></div>
+  </div>
+</section>
+
+<section class="models-only">
+  <h2>Installed models</h2>
+  <p class="lead">Every model installed in Ollama on this computer. Tick one or more, pick a test set and click "Test selected": each model answers the same unseen tasks and the same hidden tests check every answer, one model after another. Everything stays on your computer and costs nothing.</p>
+  <div class="card">
+    <p class="note" id="m-status" style="margin-top:0">Looking for Ollama…</p>
+    <div style="overflow-x:auto"><table id="m-table"></table></div>
+    <div class="controls" style="margin-top:16px">
+      <label>Test set <select id="m-set"><option value="course">24 course tasks (as in Model Lab)</option><option value="levels">Task Lab levels</option></select></label>
+      <div class="levels-pick hidden" id="m-levels-box"><span class="field-label">Levels</span><div class="snaps" id="m-levels" style="margin-top:0"></div></div>
+      <button class="primary" id="m-run">Test selected ▶</button>
+      <button class="ghost" id="m-refresh">Refresh list</button>
+      <button class="warn hidden" id="m-stop">Stop test</button>
+    </div>
+    <p class="queue" id="m-queue" style="margin:12px 0 0"></p>
+    <p class="err" id="m-error" role="alert"></p>
+  </div>
+</section>
+
+<section class="models-only">
+  <h2>Leaderboard</h2>
+  <p class="lead">Every finished test, best first. The small model trained in this lab is listed for reference. Click a row to see which answers failed and why.</p>
+  <div class="filters" id="m-filter"><button class="ghost on" data-set="course">Course tasks</button><button class="ghost" data-set="levels">Task Lab levels</button></div>
+  <div class="card" style="overflow-x:auto"><table id="lm-table"></table></div>
+  <div id="lm-detail"></div>
+</section>
+
+<section class="models-only">
+  <h2>Improve a model</h2>
+  <p class="lead">Make a new version of an installed model with its own instructions, then test it against the original. Ollama reuses the original's weights, so this takes seconds and almost no disk space. It changes how the model is told to answer, not what it knows; training a model on your own code is a separate step.</p>
+  <div class="card">
+    <div class="form" style="margin-top:0">
+      <label>Start from <select id="v-base"></select></label>
+      <label>Name of the new model <input type="text" id="v-name" maxlength="40" placeholder="e.g. qwen3-8b-rules"><small>Lowercase letters, digits, dots and dashes.</small></label>
+    </div>
+    <label class="stack" style="margin-top:16px">Instructions for the new model<textarea id="v-system" rows="9" spellcheck="false" placeholder="How the model should answer. Click &quot;Start from the lab's rules&quot; for a first version."></textarea></label>
+    <div class="actions" style="margin-top:8px"><button class="ghost" id="v-template">Start from the lab's rules</button></div>
+    <p class="note">Tip: open a model's failed answers in the leaderboard first. If most fail for the same reason (a loop, a method call such as <code>.lower()</code>), say exactly that in the instructions.</p>
+    <div class="actions"><button class="primary" id="v-create-test">Create and test against the original ▶</button><button class="ghost" id="v-create">Create only</button></div>
+    <p class="note" id="v-ok"></p>
+    <p class="err" id="v-error" role="alert"></p>
+  </div>
+</section>
+
+<details>
+  <summary>Live log (technical details)</summary>
+  <pre id="log">No log yet.</pre>
+</details>
+</main>
+<script>
+/* One page, three tabs: "/" Model Lab (course experiments), "/tasks" Task Lab (difficulty levels),
+   "/models" Models (local Ollama models: test, compare, improve). */
+const MODE = location.pathname.startsWith("/tasks") ? "ladder" : location.pathname.startsWith("/models") ? "models" : "course";
+const $ = selector => document.querySelector(selector);
+const esc = text => String(text ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const FAMILY_COLORS = {increment:"#3987e5", double:"#d95926", even:"#199e70"};
+const LEVEL_COLORS = {1:"#3987e5", 2:"#d95926", 3:"#199e70", 4:"#c98500", 5:"#d55181"};
+const EXPERIMENT_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
+const FAMILY_HINT = {increment:"x + 1", double:"x × 2", even:"is even?", square:"x²", absolute:"absolute value",
+  nonnegative:"0 if negative", reverse:"reverse text", list_sum:"sum of list"};
+const familyName = family => FAMILY_HINT[family] ? `${family} (${FAMILY_HINT[family]})` : family;
+const STAGE_ORDER = ["pretrain", "rl", "eval_before", "eval_after"];
+const BADGE = {locked:"Locked", ready:"Ready", running:"Running", done:"Done ✓", outside:"Incomplete / outside", failed:"Error"};
+const SETTING_LABEL = {seed:"pretrain seed", pretrain_lr:"pretrain LR", rl_seed:"RL seed", rl_lr:"RL LR", temperature:"temperature", group_size:"attempts"};
+
+function stageInfo(key, total){
+  const course = MODE === "course";
+  return {
+    pretrain:{n:1, title:"Pretraining", unit:"steps",
+      what: course ? "The model starts from random numbers and learns what Python code looks like."
+                   : "The model starts from random numbers and practises tasks from every chosen level."},
+    rl:{n:2, title:"Reinforcement learning", unit:"rounds",
+      what:"The model writes code, the code is run, and attempts that pass the tests are rewarded."},
+    eval_before:{n:3, title:"Test: before RL", unit:"tasks",
+      what: course ? "The step-100 model tries 24 tasks it has never seen." : `The pretrained model tries ${total} tasks it has never seen.`},
+    eval_after:{n:4, title:"Test: after RL", unit:"tasks", what:`The final RL model tries the same ${total} tasks.`},
+  }[key];
+}
+
+async function api(path, body){
+  const options = body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {};
+  const response = await fetch(path, options);
+  const data = await response.json().catch(() => ({}));
+  if(!response.ok) throw new Error(data.error || `Error ${response.status}`);
+  return data;
+}
+const duration = seconds => `${Math.floor(seconds / 60)} min ${String(Math.floor(seconds % 60)).padStart(2, "0")} s`;
+const timeAgo = seconds => seconds < 90 ? `${seconds} s ago` : seconds < 5400 ? `${Math.round(seconds / 60)} min ago` : `${Math.round(seconds / 3600)} h ago`;
+const formatCount = n => n.toLocaleString("en-US");
+const colorOf = exp => EXPERIMENT_COLORS[(exp?.color_slot ?? 0) % EXPERIMENT_COLORS.length];
+const levelText = levels => levels.length === 1 ? `level ${levels[0]}` : `levels ${levels.join(", ")}`;
+const quarterTicks = max => [0, 1, 2, 3, 4].map(i => Math.round(max * i / 4));
+const clock = epoch => new Date(epoch * 1000).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+const shortDuration = seconds => seconds < 60 ? `${Math.round(seconds)} s` : seconds < 3600 ? `${Math.round(seconds / 60)} min` : `${Math.floor(seconds / 3600)} h ${Math.round(seconds % 3600 / 60)} min`;
+function timeLeft(st){  // simple pace estimate; the first steps are slower, so wait for a few before guessing
+  const elapsed = Date.now() / 1000 - st.since;
+  if(st.progress < Math.max(3, st.total * 0.03)) return "estimating time left…";
+  return `about ${shortDuration(elapsed / st.progress * (st.total - st.progress))} left`;
+}
+function doneMeta(st, unit){
+  const t = st.tokens || {};
+  const used = [t.read ? `${tokens(t.read)} tokens read` : "", t.written ? `${tokens(t.written)} tokens written` : ""].filter(Boolean).join(" · ");
+  return `${st.total} / ${st.total} ${unit}` + (st.seconds ? ` · took ${shortDuration(st.seconds)}` : "")
+    + (st.finished ? ` · finished ${clock(st.finished)}` : "") + (used ? `<br>${used}` : "");
+}
+
+/* ---------- page mode ---------- */
+document.body.classList.add(`mode-${MODE}`);
+$(`#tab-${MODE}`).classList.add("on");
+if(MODE === "ladder"){
+  document.title = "Task Lab";
+  $("#page-title").textContent = "Task Lab";
+  $("#page-sub").textContent = "How far can a 25.7M-parameter model go? Harder tasks, same model, on your computer.";
+  $("#new-exp-open").textContent = "+ New run";
+  $("#exp-archive").dataset.label = "Archive run";
+  $("#f-title").textContent = "New Task Lab run";
+  $("#f-intro").textContent = "Pick the difficulty levels. The context length and answer length are sized to fit the hardest level you pick.";
+  $("#cmp-title").textContent = "Compare runs";
+}
+if(MODE === "models"){
+  document.title = "Models";
+  $("#page-title").textContent = "Models";
+  $("#page-sub").textContent = "Local models from Ollama on the same tasks and tests · test, compare, improve";
+}
+
+/* ---------- selected experiment ---------- */
+let currentExp = MODE === "models" ? null : new URLSearchParams(location.hash.slice(1)).get("exp") || (MODE === "course" ? "baseline" : null);
+let overviewData = null, ladderData = null, lastState = null;
+const withExp = path => `${path}?exp=${encodeURIComponent(currentExp)}`;
+const experimentById = id => overviewData?.experiments.find(e => e.id === id);
+
+function selectExperiment(id){
+  if(id === currentExp) return;
+  currentExp = id;
+  location.hash = id ? `exp=${encodeURIComponent(id)}` : "";
+  armedArchive = null; armedExperimentArchive = false; snapshotSignature = ""; $("#cmp-out").innerHTML = "";
+  renderExperimentBar();
+  tick(true);
+}
+
+function changedSettings(exp){
+  const defaults = overviewData.defaults, notes = [];
+  if(exp.task_levels) notes.push(levelText(exp.task_levels), `${exp.settings.pretrain_steps} steps`, `${exp.settings.rl_groups} rounds`);
+  if(exp.pretrain_from) notes.push(`reuses pretraining of ${experimentById(exp.pretrain_from)?.name || exp.pretrain_from}`);
+  for(const key of Object.keys(SETTING_LABEL)){
+    if(exp.pretrain_from && (key === "seed" || key === "pretrain_lr")) continue;
+    if(exp.settings[key] !== defaults[key]) notes.push(`${SETTING_LABEL[key]} ${exp.settings[key]}`);
+  }
+  return notes;
+}
+
+function renderExperimentBar(){
+  if(!overviewData) return;
+  const list = overviewData.experiments;
+  if(!experimentById(currentExp)) currentExp = list.length ? list[0].id : null;
+  const exp = experimentById(currentExp);
+  $("#no-runs").classList.toggle("hidden", !!exp);
+  $("#exp-sections").classList.toggle("hidden", !exp);
+  $("#exp-select").parentElement.classList.toggle("hidden", !exp);
+  $("#exp-select").innerHTML = list.map(e => `<option value="${esc(e.id)}" ${e.id === currentExp ? "selected" : ""}>${esc(e.name)}</option>`).join("");
+  $("#exp-dot").style.background = exp ? colorOf(exp) : "transparent";
+  const chips = exp ? changedSettings(exp) : [];
+  const env = exp?.environment ? [`torch ${exp.environment.torch}`, exp.environment.machine] : [];
+  $("#exp-chips").innerHTML = exp ? [...(chips.length ? chips : ["course settings"]), ...env].map(t => `<span>${esc(t)}</span>`).join("") : "";
+  const archive = $("#exp-archive");
+  const archivable = exp && currentExp !== "baseline";
+  archive.textContent = armedExperimentArchive ? "Sure? Click again" : (archive.dataset.label || "Archive experiment");
+  archive.className = `${armedExperimentArchive ? "warn" : "ghost"}${archivable ? "" : " hidden"}`;
+}
+
+$("#exp-select").addEventListener("change", event => selectExperiment(event.target.value));
+
+let armedExperimentArchive = false;
+$("#exp-archive").addEventListener("click", async () => {
+  if(!armedExperimentArchive){
+    armedExperimentArchive = true; renderExperimentBar();
+    setTimeout(() => { armedExperimentArchive = false; renderExperimentBar(); }, 5000);
+    return;
+  }
+  armedExperimentArchive = false;
+  try{
+    await api("/api/experiments/archive", {exp:currentExp});
+    await refreshOverview();
+    selectExperiment(overviewData.experiments[0]?.id || null);
+  }catch(error){ $("#action-error").textContent = error.message; renderExperimentBar(); }
+});
+
+/* ---------- Task Lab: level cards ---------- */
+function renderLevels(){
+  $("#levels").innerHTML = ladderData.levels.map(l => l.level === 5 ? customCard(l) : `<div class="card level-card">
+      <div class="stage-n" style="color:${LEVEL_COLORS[l.level]}">LEVEL ${l.level}</div>
+      <h3>${esc(l.title)}</h3>
+      <p>${esc(l.about)}</p>
+      <pre>${esc(l.example.prompt)}${esc(l.example.body)}</pre>
+      <div class="fams">${l.families.length} task types: ${l.families.map(esc).join(", ")}</div>
+    </div>`).join("");
+}
+
+/* ---------- new experiment / run form ---------- */
+const chosenLevels = () => [...document.querySelectorAll("#f-levels input:checked")].map(i => Number(i.value));
+
+function updateLadderHint(){
+  const levels = chosenLevels();
+  const size = ladderData?.sizes[levels.join(",")];
+  $("#f-size").textContent = size ? `${size.families} task types · reads up to ${size.sequence_length} characters · answers up to ${size.max_new_tokens} · test: ${size.families * 4} tasks` : "Pick at least one level.";
+  fillReuseOptions();
+}
+
+function fillReuseOptions(){
+  const levels = MODE === "ladder" ? chosenLevels().join(",") : null;
+  const steps = MODE === "ladder" ? Number($("#f-pretrain_steps").value) : 400;
+  const owners = overviewData.experiments.filter(e => !e.pretrain_from && e.stages.pretrain !== "locked"
+    && (e.task_levels ? e.task_levels.join(",") : null) === levels && (e.settings.pretrain_steps || 400) === steps);
+  $("#f-pretrain-from").innerHTML = owners.map(e => `<option value="${esc(e.id)}">Reuse from: ${esc(e.name)}</option>`).join("")
+    + `<option value="">Train new pretraining</option>`;
+  $("#f-reuse-note").textContent = owners.length ? "Reusing skips stage 1. Only RL settings then differ." : "No earlier run with the same levels and steps to reuse yet.";
+  togglePretrainFields();
+}
+
+function openForm(){
+  const defaults = overviewData.defaults;
+  for(const key of Object.keys(SETTING_LABEL)) $(`#f-${key}`).value = defaults[key];
+  $("#f-name").value = ""; $("#f-error").textContent = "";
+  if(MODE === "ladder"){
+    $("#f-levels").innerHTML = ladderData.levels.map(l => `<label><input type="checkbox" value="${l.level}" checked> ${l.level} · ${esc(l.title)}</label>`).join("");
+    $("#f-pretrain_steps").innerHTML = overviewData.choices.pretrain_steps.map(v => `<option value="${v}">${v} steps</option>`).join("");
+    $("#f-rl_groups").innerHTML = overviewData.choices.rl_groups.map(v => `<option value="${v}">${v} rounds</option>`).join("");
+    updateLadderHint();
+  } else {
+    fillReuseOptions();
+  }
+  $("#new-exp").classList.remove("hidden");
+  $("#f-name").focus();
+}
+function togglePretrainFields(){ $("#f-pretrain-fields").classList.toggle("hidden", $("#f-pretrain-from").value !== ""); }
+$("#f-pretrain-from").addEventListener("change", togglePretrainFields);
+$("#f-levels").addEventListener("change", updateLadderHint);
+$("#f-pretrain_steps").addEventListener("change", fillReuseOptions);
+$("#new-exp-open").addEventListener("click", openForm);
+$("#f-cancel").addEventListener("click", () => $("#new-exp").classList.add("hidden"));
+
+async function createExperiment(runAll){
+  const settings = {};
+  for(const key of Object.keys(SETTING_LABEL)) settings[key] = $(`#f-${key}`).value === "" ? null : Number($(`#f-${key}`).value);
+  const body = {name:$("#f-name").value, pretrain_from:$("#f-pretrain-from").value || null, settings, kind:MODE};
+  if(MODE === "ladder"){
+    body.task_levels = chosenLevels();
+    settings.pretrain_steps = Number($("#f-pretrain_steps").value);
+    settings.rl_groups = Number($("#f-rl_groups").value);
+  }
+  $("#f-error").textContent = "";
+  try{
+    const created = await api("/api/experiments", body);
+    $("#new-exp").classList.add("hidden");
+    await refreshOverview();
+    selectExperiment(created.experiment.id);
+    if(runAll){
+      try{ await api("/api/run-all", {exp:created.experiment.id}); }
+      catch(error){ $("#action-error").textContent = error.message; }
+      await tick(true);
+    }
+  }catch(error){ $("#f-error").textContent = error.message; }
+}
+$("#f-create").addEventListener("click", () => createExperiment(false));
+$("#f-create-run").addEventListener("click", () => createExperiment(true));
+
+/* ---------- stages ---------- */
+let armedArchive = null;
+
+function stageDetails(key, st, busy, runningElsewhere){
+  const info = stageInfo(key, st.total);
+  const details = {meta:"", note:"", buttons:""};
+  if(st.shared_from){
+    details.note = `Reused from "${esc(st.shared_name)}". Run or redo it in that run.`;
+    if(st.status === "done") details.meta = doneMeta(st, info.unit);
+    return details;
+  }
+  if(st.status === "locked") details.note = `Stage ${info.n === 3 ? 1 : info.n - 1} has to finish first.`;
+  if(st.status === "ready"){
+    details.buttons = `<button class="primary" data-act="start" data-stage="${key}" ${busy ? "disabled" : ""}>Start ▶</button>`;
+    if(busy) details.note = runningElsewhere ? `"${esc(runningElsewhere)}" is running; you can start this when it finishes.` : "Another stage is running; you can start this one when it finishes.";
+  }
+  if(st.status === "running"){
+    details.meta = `${st.progress} / ${st.total} ${info.unit} · ${Math.round(100 * st.progress / st.total)}% · ${duration(Date.now() / 1000 - st.since)} · ${timeLeft(st)}`;
+    details.buttons = `<button class="ghost" data-act="stop">Stop</button>`;
+    details.note = "You can close this page; the run continues as long as the Terminal window stays open.";
+  }
+  if(st.status === "done") details.meta = doneMeta(st, info.unit);
+  if(st.status === "outside"){
+    details.meta = st.progress ? `Saved checkpoint: ${st.progress} / ${st.total} ${info.unit}` : "";
+    details.note = st.seconds_since_change < 180
+      ? `Looks like it is still running in Terminal (last change ${timeAgo(st.seconds_since_change)}). It will appear here when it finishes.`
+      : `Looks unfinished (last change ${timeAgo(st.seconds_since_change)}). Use the button below to start over.`;
+  }
+  if(st.status === "failed") details.note = "The run stopped with an error. Details are in the 'Live log' section at the bottom.";
+  if(["done", "outside", "failed"].includes(st.status)){
+    const armed = armedArchive === key;
+    details.buttons += `<button class="${armed ? "warn" : "ghost"}" data-act="archive" data-stage="${key}" ${busy ? "disabled" : ""}>${armed ? "Sure? Click again" : "Archive and redo"}</button>`;
+    if(armed && (key === "pretrain" || key === "rl")) details.note = "This also archives the later stages that were built on this result.";
+  }
+  return details;
+}
+
+function progressPercent(st){
+  if(st.status === "done") return 100;
+  if(st.status === "locked" || st.status === "ready") return 0;
+  return Math.round(100 * st.progress / st.total);
+}
+
+function renderStages(state){
+  const busy = state.job.running;
+  const runningElsewhere = busy && state.job.exp !== currentExp ? state.job.exp_name : null;
+  $("#stages").innerHTML = STAGE_ORDER.map(key => {
+    const st = state.stages[key], info = stageInfo(key, st.total), d = stageDetails(key, st, busy, runningElsewhere);
+    const badge = st.shared_from ? (st.status === "done" ? "Reused ✓" : `Reused · ${BADGE[st.status]}`) : BADGE[st.status];
+    return `<div class="card stage">
+      <div class="stage-n">STAGE ${info.n}</div>
+      <h3>${info.title}</h3>
+      <p>${info.what}</p>
+      <span class="badge ${st.status}">${badge}</span>
+      <div class="bar" aria-hidden="true"><i style="width:${progressPercent(st)}%"></i></div>
+      <div class="meta">${d.meta}</div>
+      ${d.note ? `<p class="note">${d.note}</p>` : ""}
+      <div class="actions">${d.buttons}</div>
+    </div>`;
+  }).join("");
+  const remaining = STAGE_ORDER.filter(k => !state.stages[k].shared_from && ["ready", "locked"].includes(state.stages[k].status));
+  $("#run-all").disabled = busy || !remaining.length;
+  $("#run-all").textContent = remaining.length ? `Run all remaining (${remaining.length}) ▶▶` : "Everything is done ✓";
+  renderQueue(state.job);
+}
+
+function renderQueue(job){
+  const queue = job.queue || [];
+  const page = MODE === "ladder" ? "Task Lab" : "Model Lab";
+  const running = job.running && lastState?.stages[job.stage];
+  const stageTitle = stage => stage === "test" ? "Local model test" : stageInfo(stage, 0).title;
+  document.title = running && job.exp === currentExp
+    ? `${Math.round(100 * running.progress / running.total)}% · ${stageTitle(job.stage)} · ${page}`
+    : job.running ? `Running · ${page}` : page;
+  $("#queue").textContent = job.running
+    ? `Running now: ${job.exp_name}${job.stage === "test" ? "" : ` · ${stageTitle(job.stage)}`}` + (queue.length ? ` · next: ${queue.map(stageTitle).join(" → ")}` : "")
+    : "";
+}
+
+$("#stages").addEventListener("click", async event => {
+  const button = event.target.closest("button[data-act]");
+  if(!button) return;
+  const act = button.dataset.act, stage = button.dataset.stage;
+  $("#action-error").textContent = "";
+  if(act === "archive" && armedArchive !== stage){  // archiving moves files, so it takes a second click
+    armedArchive = stage;
+    renderStages(lastState);
+    setTimeout(() => { if(armedArchive === stage){ armedArchive = null; renderStages(lastState); } }, 5000);
+    return;
+  }
+  armedArchive = null;
+  try{
+    await api(`/api/${act}`, {exp:currentExp, stage});
+    await tick(true);
+  }catch(error){ $("#action-error").textContent = error.message; }
+});
+
+$("#run-all").addEventListener("click", async () => {
+  $("#action-error").textContent = "";
+  try{ await api("/api/run-all", {exp:currentExp}); await tick(true); }
+  catch(error){ $("#action-error").textContent = error.message; }
+});
+
+/* ---------- chart helpers ---------- */
+const W = 640, H = 300, M = {l:48, r:12, t:16, b:44};
+const PW = W - M.l - M.r, PH = H - M.t - M.b;
+
+function axes(xTicks, yTicks, x, y, xLabel, yFormat = t => t){
+  let svg = "";
+  for(const t of yTicks) svg += `<line x1="${M.l}" x2="${W - M.r}" y1="${y(t)}" y2="${y(t)}" stroke="#2a3346" stroke-width="1"/>
+    <text x="${M.l - 8}" y="${y(t) + 5}" text-anchor="end" fill="#8592a8" font-size="15">${yFormat(t)}</text>`;
+  for(const t of xTicks) svg += `<text x="${x(t)}" y="${H - M.b + 20}" text-anchor="middle" fill="#8592a8" font-size="15">${t}</text>`;
+  return svg + `<text x="${M.l + PW / 2}" y="${H - 4}" text-anchor="middle" fill="#8592a8" font-size="15">${xLabel}</text>`;
+}
+
+function attachHover(box, onMove){
+  const tip = box.querySelector(".tip"), svg = box.querySelector("svg");
+  svg.addEventListener("mousemove", event => {
+    const rect = svg.getBoundingClientRect();
+    const hit = onMove((event.clientX - rect.left) / rect.width * W);
+    if(!hit){ tip.style.display = "none"; return; }
+    tip.innerHTML = hit.html;
+    tip.style.display = "block";
+    tip.style.left = `${hit.x / W * rect.width}px`;
+    tip.style.top = `${hit.y / H * rect.height}px`;
+  });
+  svg.addEventListener("mouseleave", () => { tip.style.display = "none"; onMove(null); });
+}
+
+const pathFrom = points => points.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)},${py.toFixed(1)}`).join("");
+const pills = (selector, items) => { $(selector).innerHTML = items.map(t => `<span>${esc(t)}</span>`).join(""); };
+const nearest = (points, xValue) => points.reduce((best, p) => Math.abs(p[0] - xValue) < Math.abs(best[0] - xValue) ? p : best);
+const legend = (selector, series) => {
+  $(selector).innerHTML = series.map(s => `<span><i class="sw" style="background:${s.color}"></i>${esc(s.name)}</span>`).join("");
+};
+
+/* A multi-line chart with one crosshair that reports every line's value at that x. */
+function lineChart(box, series, opts){
+  if(!series.length){ box.innerHTML = `<div class="empty">${opts.empty}</div>`; return; }
+  const x = v => M.l + (v - opts.xMin) / (opts.xMax - opts.xMin) * PW, y = v => M.t + PH - v / opts.yMax * PH;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.label)}">`;
+  svg += axes(opts.xTicks, opts.yTicks, x, y, opts.xLabel, opts.yFormat);
+  for(const mark of opts.marks || []) svg += `<line x1="${x(mark)}" x2="${x(mark)}" y1="${M.t}" y2="${M.t + PH}" stroke="#5a6780" stroke-dasharray="4 4"/>`;
+  if(opts.note) svg += `<text x="${x(opts.note.x) + 6}" y="${M.t + 14}" fill="#b6c2d4" font-size="15">${esc(opts.note.text)}</text>`;
+  for(const s of series) svg += `<path d="${pathFrom(s.points.map(p => [x(p[0]), y(p[1])]))}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round"/>`;
+  svg += `<line class="cross" y1="${M.t}" y2="${M.t + PH}" stroke="#eef2f7" opacity="0"/>`;
+  svg += series.map((s, i) => `<circle class="dot${i}" r="5" fill="${s.color}" stroke="#161b26" stroke-width="2" opacity="0"/>`).join("");
+  svg += `<rect x="${M.l}" y="${M.t}" width="${PW}" height="${PH}" fill="transparent"/></svg><div class="tip"></div>`;
+  box.innerHTML = svg;
+  attachHover(box, sx => {
+    const cross = box.querySelector(".cross");
+    if(sx === null){ cross.setAttribute("opacity", 0); series.forEach((_, i) => box.querySelector(`.dot${i}`).setAttribute("opacity", 0)); return null; }
+    const xValue = opts.xMin + (sx - M.l) / PW * (opts.xMax - opts.xMin);
+    const hits = series.map(s => ({s, p: nearest(s.points, xValue)}));
+    const px = x(hits[0].p[0]);
+    cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.setAttribute("opacity", .4);
+    hits.forEach((h, i) => { const dot = box.querySelector(`.dot${i}`); dot.setAttribute("cx", x(h.p[0])); dot.setAttribute("cy", y(h.p[1])); dot.setAttribute("opacity", 1); });
+    const rows = hits.map(h => `<span class="dot" style="background:${h.s.color};width:9px;height:9px"></span> ${esc(h.s.name)}: <b>${opts.yFormat(h.p[1])}</b>`).join("<br>");
+    return {x:px, y:Math.min(...hits.map(h => y(h.p[1]))), html:`${opts.xName} ${hits[0].p[0]}<br>${rows}`};
+  });
+}
+
+function lossTicks(maxY){ const ticks = []; for(let t = 0; t <= maxY; t += maxY <= 6 ? 1 : 2) ticks.push(t); return ticks; }
+const lossFormat = v => Number.isInteger(v) ? v : v.toFixed(3);
+
+/* ---------- compare runs ---------- */
+function renderComparison(){
+  const rows = overviewData.experiments;
+  const doneAfter = rows.filter(e => e.after !== null);
+  const afterRates = doneAfter.map(e => e.after / e.tasks);
+  const bestRate = doneAfter.length > 1 && Math.max(...afterRates) > Math.min(...afterRates) ? Math.max(...afterRates) : null;  // no "best" on a tie
+  const statusText = e => {
+    const done = STAGE_ORDER.filter(s => e.stages[s] === "done").length;
+    if(STAGE_ORDER.some(s => e.stages[s] === "running")) return "running";
+    return done === 4 ? "complete" : `${done} / 4 stages`;
+  };
+  const cell = (value, suffix = "") => value === null || value === undefined ? "—" : `${value}${suffix}`;
+  const solved = (value, total) => value === null ? "—" : `${value} / ${total}`;
+  $("#cmp-table").innerHTML = `<thead><tr><th>${MODE === "course" ? "Experiment" : "Run"}</th><th>Settings vs. the course</th><th class="num">Pretrain loss (end)</th>
+      <th class="num">RL success, first → last 24 rounds</th><th class="num">Before</th><th class="num">After</th><th class="num">Time</th><th>Status</th></tr></thead><tbody>`
+    + rows.map(e => `<tr class="pick ${e.id === currentExp ? "sel" : ""}" data-exp="${esc(e.id)}">
+        <td><span class="dot" style="background:${colorOf(e)}"></span> ${esc(e.name)}</td>
+        <td>${esc(changedSettings(e).join(", ") || "course settings")}</td>
+        <td class="num">${cell(e.final_loss)}</td>
+        <td class="num">${e.rl_first24 === null ? "—" : `${e.rl_first24}% → ${cell(e.rl_last24, "%")}`}</td>
+        <td class="num">${solved(e.before, e.tasks)}</td>
+        <td class="num">${solved(e.after, e.tasks)}${bestRate !== null && e.after !== null && e.after / e.tasks === bestRate ? `<span class="best">★ best</span>` : ""}</td>
+        <td class="num">${e.run_seconds ? shortDuration(e.run_seconds) : "—"}</td>
+        <td>${statusText(e)}</td></tr>`).join("") + "</tbody>";
+  const ptSeries = rows.filter(e => e.pretrain_curve.length).map(e => ({name:e.name, color:colorOf(e), points:e.pretrain_curve}));
+  const rlSeries = rows.filter(e => e.rl_curve.length).map(e => ({name:e.name, color:colorOf(e), points:e.rl_curve}));
+  legend("#ov-pt-legend", ptSeries); legend("#ov-rl-legend", rlSeries);
+  const maxLoss = Math.max(1, Math.ceil(Math.max(0, ...ptSeries.flatMap(s => s.points.map(p => p[1])))));
+  const maxStep = Math.max(400, ...rows.map(e => e.settings.pretrain_steps || 400));
+  const maxRound = Math.max(96, ...rows.map(e => e.settings.rl_groups || 96));
+  lineChart($("#ov-pt"), ptSeries, {xMin:0, xMax:maxStep, xTicks:quarterTicks(maxStep), yMax:maxLoss, yTicks:lossTicks(maxLoss),
+    xLabel:"training step", xName:"Step", yFormat:lossFormat, marks:MODE === "course" ? [100] : [], label:"Pretraining loss per run",
+    empty:"No finished pretraining yet."});
+  lineChart($("#ov-rl"), rlSeries, {xMin:1, xMax:maxRound, xTicks:[1, ...quarterTicks(maxRound).slice(1)], yMax:100, yTicks:[0, 25, 50, 75, 100],
+    xLabel:"RL round", xName:"Round", yFormat:v => `${v}%`, label:"RL success rate per run", empty:"No RL runs yet."});
+}
+
+$("#cmp-table").addEventListener("click", event => {
+  const row = event.target.closest("tr[data-exp]");
+  if(row) selectExperiment(row.dataset.exp);
+});
+
+/* ---------- Task Lab: where the model breaks ---------- */
+function drawBreaks(data){
+  const pct = (solved, total) => total ? Math.round(100 * solved / total) : null;
+  const line = (label, solved, total, color) => {
+    const p = pct(solved, total);
+    return `<div class="bline"><span>${label}</span><div class="btrack"><i style="width:${p ?? 0}%;background:${color}"></i></div>
+      <span>${p === null ? "not run yet" : `<b>${p}%</b> · ${solved}/${total}`}</span></div>`;
+  };
+  $("#breaks").innerHTML = data.levels.map(l => `<div class="brow">
+      <div><div class="stage-n" style="color:${LEVEL_COLORS[l.level]}">LEVEL ${l.level}</div><b>${esc(l.title)}</b></div>
+      <div class="bars">
+        ${line("After pretraining", l.before_solved, l.before_total, "#5a6780")}
+        ${line("After RL", l.after_solved, l.after_total, LEVEL_COLORS[l.level])}
+        ${line("RL attempts", l.rl_correct, l.rl_attempts, "#3a4458")}
+      </div></div>`).join("")
+    + `<p class="note">"RL attempts" = share of practice attempts during RL that passed all tests. Grey bars are before RL; colored bars are the final model.</p>`;
+}
+
+/* ---------- this run ---------- */
+function drawPretrain(data, status, steps){
+  const box = $("#pt-chart"), pts = data.points;
+  if(!pts.length){
+    box.innerHTML = `<div class="empty">${status === "outside" ? "Pretraining is running in Terminal. The curve appears here when it finishes." : "No data yet. Start stage 1."}</div>`;
+    pills("#pt-stats", []);
+    return;
+  }
+  const maxY = Math.max(1, Math.ceil(Math.max(...pts.map(p => p[1]))));
+  const course = MODE === "course";
+  lineChart(box, [{name:"loss", color:"#3987e5", points:pts}], {xMin:0, xMax:steps, xTicks:quarterTicks(steps), yMax:maxY,
+    yTicks:lossTicks(maxY), xLabel:"training step", xName:"Step", yFormat:lossFormat,
+    marks: course ? [100, 200, 400] : [steps / 2, steps], note: course ? {x:100, text:"checkpoint 100 · RL starts here"} : null,
+    label:"Pretraining loss", empty:""});
+  const stats = [`Loss ${pts[0][1].toFixed(2)} → ${pts[pts.length - 1][1].toFixed(2)}`, `${pts[pts.length - 1][0]} / ${steps} steps`];
+  if(data.complete){
+    if(data.tokens) stats.push(`${(data.tokens / 1e6).toFixed(2)}M tokens`);
+    if(data.seconds) stats.push(`time ${duration(data.seconds)}`);
+    if(data.device) stats.push(`device: ${data.device}`);
+  }
+  pills("#pt-stats", stats);
+}
+
+function barColor(family){
+  if(MODE === "ladder") return LEVEL_COLORS[ladderData?.family_levels[family]] || "#8592a8";
+  return FAMILY_COLORS[family] || "#8592a8";
+}
+
+function drawRL(data, status, totalRounds){
+  if(MODE === "ladder") legend("#rl-legend", Object.entries(LEVEL_COLORS).map(([lv, color]) => ({name:`level ${lv}`, color})));
+  else legend("#rl-legend", Object.keys(FAMILY_COLORS).map(f => ({name:familyName(f), color:FAMILY_COLORS[f]})));
+  $("#rl-legend").insertAdjacentHTML("beforeend", `<span><i class="sw line"></i>average (last 12 rounds)</span>`);
+  const box = $("#rl-chart"), groups = data.groups;
+  if(!groups.length){
+    const message = status === "outside" ? "RL is running in Terminal. The chart appears here when it finishes."
+                  : status === "locked" ? "Pretraining has to finish first." : "No data yet. Start stage 2.";
+    box.innerHTML = `<div class="empty">${message}</div>`;
+    pills("#rl-stats", []);
+    return;
+  }
+  const size = groups[0].size || 16, band = PW / totalRounds;
+  const x = round => M.l + (round - 1) * band, y = correct => M.t + PH - correct / size * PH;
+  const step = size > 8 ? 4 : size > 4 ? 2 : 1, yTicks = [];
+  for(let t = 0; t <= size; t += step) yTicks.push(t);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Correct attempts out of ${size} in each RL round">`;
+  svg += axes([], yTicks, x, y, "round");
+  for(const t of [1, ...quarterTicks(totalRounds).slice(1)]) svg += `<text x="${x(t) + band / 2}" y="${H - M.b + 20}" text-anchor="middle" fill="#8592a8" font-size="15">${t}</text>`;
+  for(const g of groups){
+    const h = Math.max(2, g.exact / size * PH);  // a 2px stub keeps zero-success rounds visible
+    const fill = g.exact ? barColor(g.family) : "#3a4458";
+    svg += `<rect x="${(x(g.group) + .5).toFixed(1)}" y="${(M.t + PH - h).toFixed(1)}" width="${Math.max(1, band - 1).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" fill="${fill}"/>`;
+  }
+  const rollingAverage = groups.map((g, i) => {
+    const window = groups.slice(Math.max(0, i - 11), i + 1);
+    return window.reduce((sum, w) => sum + w.exact, 0) / window.length;
+  });
+  svg += `<path d="${pathFrom(rollingAverage.map((v, i) => [x(groups[i].group) + band / 2, y(v)]))}" fill="none" stroke="#eef2f7" stroke-width="2" stroke-linejoin="round"/>`;
+  svg += `<rect class="hi" y="${M.t}" height="${PH}" width="${band}" fill="#eef2f7" opacity="0"/>
+          <rect x="${M.l}" y="${M.t}" width="${PW}" height="${PH}" fill="transparent"/></svg><div class="tip"></div>`;
+  box.innerHTML = svg;
+  attachHover(box, sx => {
+    const highlight = box.querySelector(".hi");
+    const round = sx === null ? null : Math.floor((sx - M.l) / band) + 1;
+    const g = groups.find(v => v.group === round);
+    if(!g){ highlight.setAttribute("opacity", 0); return null; }
+    highlight.setAttribute("x", x(round)); highlight.setAttribute("opacity", .08);
+    const level = MODE === "ladder" ? ` · level ${ladderData.family_levels[g.family]}` : "";
+    return {x:x(round) + band / 2, y:y(g.exact), html:`Round <b>${g.group}</b> · ${esc(familyName(g.family))}${level} · <b>${g.exact}/${g.size}</b> correct`};
+  });
+  const correct = list => list.reduce((sum, g) => sum + g.exact, 0);
+  const rate = list => Math.round(100 * correct(list) / (list.length * size));
+  const stats = [`${groups.length} / ${totalRounds} rounds`, `${correct(groups)} / ${groups.length * size} correct attempts`];
+  if(groups.length >= 48) stats.push(`first 24 rounds ${rate(groups.slice(0, 24))}% → last 24 rounds ${rate(groups.slice(-24))}%`);
+  if(data.complete && data.seconds) stats.push(`time ${duration(data.seconds)}`);
+  pills("#rl-stats", stats);
+}
+
+function drawFacts(pretrain, rl){
+  const total = pretrain.parameters?.total, trainable = rl.trainable_parameters;
+  const fact = (value, label) => `<div><b>${value}</b><span>${label}</span></div>`;
+  $("#model-facts").innerHTML = [
+    fact(total ? formatCount(total) : "—", "parameters (the same number at every stage)"),
+    fact(trainable ? formatCount(trainable) : "—", "of them adjusted during RL"),
+    fact("values, not size", "what training changes"),
+  ].join("");
+}
+
+/* ---------- before / after ---------- */
+let episodeFilter = "changed", evalData = null;
+const signature = prompt => prompt.split("\n").pop();
+const describe = prompt => (prompt.split("\n")[1] || "").replace(/^#\s*/, "");
+const codeBlock = (prompt, output) => `<pre><span class="sig">${esc(signature(prompt))}</span>${esc(output)}</pre>`;
+
+function verdict(result){
+  if(!result) return `<span class="fail">— none</span>`;
+  if(result.status === "invalid") return `<span class="fail">✗ Invalid Python</span>`;
+  const tests = `${result.tests_passed}/${result.tests_total} tests`;
+  return result.passed ? `<span class="pass">✓ Passed · ${tests}</span>` : `<span class="fail">✗ Failed · ${tests}</span>`;
+}
+
+function pairByTask(before, after){
+  const byTask = {};
+  for(const [side, data] of [["before", before], ["after", after]]){
+    for(const e of data ? data.episodes : []) (byTask[e.task] ||= {prompt:e.prompt, family:e.family})[side] = e;
+  }
+  return byTask;
+}
+
+function drawEval(data, tests){
+  evalData = data;
+  $("#eval-lead").textContent = MODE === "course"
+    ? "The same 24 new tasks: the model before reinforcement learning (pretraining step 100) and after it (RL round 96). The model never saw these tasks during training."
+    : `The same ${tests} new tasks (4 per task type): the model after pretraining and after RL. The model never saw these tasks during training.`;
+  const box = $("#eval"), before = data.before, after = data.after;
+  if(!before && !after){
+    box.innerHTML = `<div class="card empty">Run stages 3 and 4 to see the before/after comparison here.</div>`;
+    return;
+  }
+  const solved = side => side ? `${side.summary.tasks_solved}<small> / ${side.summary.tasks_total}</small>` : "—";
+  const byTask = pairByTask(before, after), all = Object.values(byTask);
+  const gained = all.filter(t => !t.before?.passed && t.after?.passed).length;
+  const lost = all.filter(t => t.before?.passed && !t.after?.passed).length;
+  const families = [...new Set([...Object.keys(before?.by_family || {}), ...Object.keys(after?.by_family || {})])];
+  const familyCell = (side, f) => side?.by_family[f] ? `${side.by_family[f].solved} / ${side.by_family[f].tasks}` : "—";
+  const rows = families.map(f => `<tr><td><i class="sw" style="background:${barColor(f)}"></i> ${esc(familyName(f))}</td>
+      <td class="num">${familyCell(before, f)}</td><td class="num">${familyCell(after, f)}</td></tr>`).join("");
+  const changed = Object.entries(byTask).filter(([, t]) => (t.before?.passed) !== (t.after?.passed));
+  const shown = episodeFilter === "changed" ? changed : Object.entries(byTask);
+  const episodes = shown.map(([id, t]) => `<div class="ep">
+      <div class="q"><div class="label">${esc(familyName(t.family))}</div>${esc(describe(t.prompt))}<br><code>${esc(id)}</code></div>
+      <div class="res"><div class="label">Before</div>${t.before ? codeBlock(t.prompt, t.before.output) : ""}${verdict(t.before)}</div>
+      <div class="res"><div class="label">After</div>${t.after ? codeBlock(t.prompt, t.after.output) : ""}${verdict(t.after)}</div>
+    </div>`).join("") || `<p class="note">No task changed its result. Click "All" to see every answer.</p>`;
+  box.innerHTML = `<div class="grid2">
+      <div class="card"><div class="label">Tasks solved (one try each)</div>
+        <div class="hero"><div><div class="label">Before</div><div class="big">${solved(before)}</div></div>
+        <div class="arrow">→</div><div><div class="label">After</div><div class="big">${solved(after)}</div></div></div>
+        <p class="note">${before && after ? `Tasks gained: ${gained} · tasks lost: ${lost}` : "The comparison completes when the other test stage finishes."}</p>
+      </div>
+      <div class="card"><div class="label">By task type</div>
+        <table><thead><tr><th>Task type</th><th class="num">Before</th><th class="num">After</th></tr></thead><tbody>${rows}</tbody></table>
+      </div></div>
+    <div class="card" style="margin-top:16px">
+      <div class="label">Answers, task by task</div>
+      <div class="filters">
+        <button class="ghost ${episodeFilter === "changed" ? "on" : ""}" data-f="changed">Only changed results (${changed.length})</button>
+        <button class="ghost ${episodeFilter === "all" ? "on" : ""}" data-f="all">All (${all.length})</button>
+      </div>
+      ${episodes}
+    </div>`;
+}
+
+$("#eval").addEventListener("click", event => {
+  const button = event.target.closest("button[data-f]");
+  if(!button) return;
+  episodeFilter = button.dataset.f;
+  drawEval(evalData, lastState?.stages.eval_after.total);
+});
+
+/* ---------- development journey (Model Lab only) ---------- */
+const chosenSnapshots = new Set(["pre-0000", "pre-0100", "pre-0400", "rl-0096"]);
+let snapshotSignature = "";
+
+function renderSnapshots(snapshots, families){
+  if(MODE !== "course") return;
+  const signatureNow = currentExp + snapshots.map(s => s.key + s.available).join();
+  if(signatureNow === snapshotSignature) return;  // keep the user's ticks while nothing changed
+  snapshotSignature = signatureNow;
+  if(!$("#cmp-family").options.length){
+    $("#cmp-family").innerHTML = families.map(f => `<option value="${f}">${esc(familyName(f))}</option>`).join("");
+    $("#cmp-index").innerHTML = [...Array(8)].map((_, i) => `<option value="${i}">${i + 1}</option>`).join("");
+  }
+  $("#snaps").innerHTML = snapshots.map(s => `<label class="${s.available ? "" : "off"}">
+      <input type="checkbox" value="${s.key}" ${s.available && chosenSnapshots.has(s.key) ? "checked" : ""} ${s.available ? "" : "disabled"}>
+      ${esc(s.label)}${s.available ? "" : " (not yet)"}</label>`).join("");
+}
+
+$("#snaps").addEventListener("change", event => {
+  if(event.target.checked) chosenSnapshots.add(event.target.value);
+  else chosenSnapshots.delete(event.target.value);
+});
+
+$("#cmp-go").addEventListener("click", async () => {
+  const keys = [...document.querySelectorAll("#snaps input:checked")].map(input => input.value);
+  const out = $("#cmp-out");
+  if(!keys.length){ out.innerHTML = `<p class="err">Pick at least one model.</p>`; return; }
+  $("#cmp-go").disabled = true;
+  out.innerHTML = `<p class="note">Loading models and writing answers… (${keys.length} models)</p>`;
+  try{
+    const r = await api("/api/compare", {exp:currentExp, family:$("#cmp-family").value, index:Number($("#cmp-index").value), snapshots:keys});
+    out.innerHTML = `<div class="grid2" style="margin-top:16px">
+        <div><div class="label">Task (${esc(r.task)})</div><pre>${esc(r.prompt)}</pre></div>
+        <div><div class="label">Correct answer (reference)</div>${codeBlock(r.prompt, r.reference)}</div></div>
+      <div class="journey">${r.answers.map((a, i) => `<div class="step">
+          <div class="label">Stage ${i + 1}</div><h4>${esc(a.label)}</h4>
+          ${codeBlock(r.prompt, a.output)}${verdict(a)}<span class="t">${a.seconds} s</span></div>`).join("")}</div>`;
+  }catch(error){ out.innerHTML = `<p class="err">${esc(error.message)}</p>`; }
+  $("#cmp-go").disabled = false;
+});
+
+/* ---------- level 5: your own tasks ---------- */
+let armedCustomDelete = null;
+
+function customCard(l){
+  const list = (ladderData.custom || []).map(t => `<li><code>${esc(t.name)}</code> · ${esc(t.description)} · ${t.tests} tests
+      <button class="ghost small ${armedCustomDelete === t.name ? "warn" : ""}" data-del="${esc(t.name)}">${armedCustomDelete === t.name ? "Sure?" : "Remove"}</button></li>`).join("");
+  return `<div class="card level-card">
+      <div class="stage-n" style="color:${LEVEL_COLORS[5]}">LEVEL 5</div>
+      <h3>Your tasks</h3>
+      <p>Tasks you write yourself, checked by your own tests.</p>
+      ${list ? `<ul class="custom-list">${list}</ul>` : `<p class="note">No tasks yet.</p>`}
+      <div class="actions"><button class="primary" id="custom-open">+ Add your task</button></div>
+    </div>`;
+}
+
+$("#levels").addEventListener("click", async event => {
+  if(event.target.id === "custom-open"){
+    $("#custom-form").classList.remove("hidden"); $("#c-error").textContent = ""; $("#c-desc").focus();
+    return;
+  }
+  const name = event.target.dataset?.del;
+  if(!name) return;
+  if(armedCustomDelete !== name){ armedCustomDelete = name; renderLevels(); setTimeout(() => { armedCustomDelete = null; renderLevels(); }, 5000); return; }
+  armedCustomDelete = null;
+  try{ await api("/api/custom-tasks/delete", {name}); await reloadLadder(); }
+  catch(error){ alertInline("#c-error", error.message); renderLevels(); }
+});
+
+$("#c-cancel").addEventListener("click", () => $("#custom-form").classList.add("hidden"));
+$("#c-save").addEventListener("click", async () => {
+  $("#c-error").textContent = "";
+  $("#c-save").disabled = true; $("#c-save").textContent = "Checking…";
+  try{
+    const saved = await api("/api/custom-tasks", {description:$("#c-desc").value, code:$("#c-code").value, tests:$("#c-tests").value});
+    $("#custom-form").classList.add("hidden");
+    $("#c-desc").value = $("#c-code").value = $("#c-tests").value = "";
+    await reloadLadder();
+    $("#try-family").value = saved.task.name; loadTryTask();
+  }catch(error){ $("#c-error").textContent = error.message; }
+  $("#c-save").disabled = false; $("#c-save").textContent = "Check and save";
+});
+
+const alertInline = (selector, message) => { $(selector).textContent = message; };
+
+async function reloadLadder(){
+  ladderData = await api("/api/ladder");
+  renderLevels();
+  fillTryTasks();
+  fillLocalLevels();
+}
+
+/* ---------- try a task yourself ---------- */
+let tryTask = null;
+const tokens = n => n === null || n === undefined ? "—" : n < 1000 ? `${n}` : n < 1e6 ? `${(n / 1000).toFixed(1)}K` : `${(n / 1e6).toFixed(2)}M`;
+
+function fillTryTasks(){
+  if(MODE !== "ladder" || !ladderData) return;
+  const current = $("#try-family").value;
+  $("#try-family").innerHTML = ladderData.levels.filter(l => l.families.length).map(l =>
+    `<optgroup label="Level ${l.level} · ${esc(l.title)}">${l.families.map(f => `<option value="${esc(f)}">${esc(familyName(f))}</option>`).join("")}</optgroup>`).join("");
+  if(current && [...$("#try-family").options].some(o => o.value === current)) $("#try-family").value = current;
+}
+
+async function loadTryTask(){
+  $("#try-out").innerHTML = "";
+  $("#try-prompt").textContent = "Loading…";
+  try{
+    tryTask = await api("/api/try", {mode:"show", family:$("#try-family").value, index:Number($("#try-index").value)});
+    $("#try-prompt").textContent = tryTask.prompt;
+    $("#try-code").value = `${tryTask.prompt.split("\n").pop()}\n    `;
+  }catch(error){ $("#try-prompt").textContent = error.message; }
+}
+$("#try-family").addEventListener("change", loadTryTask);
+$("#try-index").addEventListener("change", loadTryTask);
+
+$("#try-ref").addEventListener("click", () => {
+  if(!tryTask) return;
+  $("#try-out").innerHTML = `<div class="label" style="margin-top:16px">Reference solution</div><pre>${esc(tryTask.reference)}</pre>`;
+});
+
+function renderTryResult(r, who){
+  const rows = r.cases.map(c => `<tr><td><code>${esc(c.input)}</code></td><td><code>${esc(c.expected)}</code></td>
+      <td><code>${esc(c.got)}</code></td><td>${c.ok ? `<span class="pass">✓ pass</span>` : `<span class="fail">✗ fail</span>`}</td></tr>`).join("");
+  const usage = r.written !== undefined ? `<p class="note">${tokens(r.read)} tokens read · ${tokens(r.written)} tokens written${r.seconds ? ` · ${r.seconds} s` : ""}</p>` : "";
+  $("#try-out").innerHTML = `<div class="grid2" style="margin-top:16px">
+      <div><div class="label">${esc(who)}</div><pre>${esc(r.code)}</pre></div>
+      <div><div class="label">Result</div>${verdict(r)}${r.message ? `<p class="note">${esc(r.message)}</p>` : ""}${usage}
+        ${rows ? `<table style="margin-top:12px"><thead><tr><th>Input</th><th>Expected</th><th>Got</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : ""}
+      </div></div>`;
+}
+
+$("#try-run").addEventListener("click", async () => {
+  if(!tryTask) return;
+  $("#try-run").disabled = true;
+  try{ renderTryResult(await api("/api/try", {mode:"check", family:$("#try-family").value, index:Number($("#try-index").value), code:$("#try-code").value}), "Your solution"); }
+  catch(error){ $("#try-out").innerHTML = `<p class="err">${esc(error.message)}</p>`; }
+  $("#try-run").disabled = false;
+});
+
+$("#try-ask").addEventListener("click", async () => {
+  const choice = $("#try-model").value;
+  if(!choice || !tryTask) return;
+  const [kind, value] = [choice.slice(0, choice.indexOf(":")), choice.slice(choice.indexOf(":") + 1)];
+  const body = {mode: kind === "ollama" ? "ollama" : "snapshot", family:$("#try-family").value, index:Number($("#try-index").value)};
+  if(kind === "ollama") body.model = value; else body.checkpoint = value;
+  $("#try-ask").disabled = true;
+  $("#try-out").innerHTML = `<p class="note">Asking ${esc($("#try-model").selectedOptions[0].textContent)}… (a big local model can take a minute the first time)</p>`;
+  try{
+    const r = await api("/api/try", body);
+    renderTryResult(r, `Answer from ${$("#try-model").selectedOptions[0].textContent}`);
+    if(r.raw && r.raw.trim() !== r.code.trim()) $("#try-out").insertAdjacentHTML("beforeend", `<details style="margin-top:12px"><summary>Full reply</summary><pre>${esc(r.raw)}</pre></details>`);
+  }catch(error){ $("#try-out").innerHTML = `<p class="err">${esc(error.message)}</p>`; }
+  $("#try-ask").disabled = false;
+});
+
+/* ---------- local models (Ollama): the Models page, plus the model list for "Try a task" ---------- */
+let localInfo = null, snapshotOptions = [], localData = {runs:[], reference:{course:null, levels:[]}, queued:[]};
+let localDetail = null, localResult = null, showAllFailures = false, boardSet = "course", armedDelete = null;
+const picked = new Set();
+const FAILURES_SHOWN = 8;  // a weak model can fail dozens of tasks; show a few, the rest on request
+const LAB_RULES = `You write small Python functions that are checked by automated tests.
+Reply with only the complete function as plain Python code: no explanation, no Markdown.
+Strict rules:
+- No loops (for, while), no list comprehensions, no imports, no helper functions.
+- No method calls or attributes: never write .lower(), .split(), .append() or similar.
+- Only these built-ins: sum, len, abs, min, max, bool, int, str. Use operators, slicing (s[::-1]) and if/else instead.
+- A generator expression inside sum() is allowed.
+- The last line of the function is a return statement.`;
+const gigabytes = bytes => bytes ? `${(bytes / 1e9).toFixed(1)} GB` : "—";
+const percent = (ok, n) => n ? Math.round(100 * ok / n) : 0;
+
+async function loadLocalModels(){
+  localInfo = await api("/api/local-models").catch(() => ({available:false, models:[], details:[], error:"Could not ask the lab server."}));
+  if(MODE === "ladder"){
+    snapshotOptions = (await api("/api/try-options").catch(() => ({snapshots:[]}))).snapshots;
+    const ollama = localInfo.models.map(m => `<option value="ollama:${esc(m)}">${esc(m)}</option>`).join("");
+    const snaps = snapshotOptions.map(s => `<option value="snap:${esc(s.checkpoint)}">${esc(s.label)}</option>`).join("");
+    $("#try-model").innerHTML = (ollama ? `<optgroup label="Local models (Ollama)">${ollama}</optgroup>` : "")
+      + (snaps ? `<optgroup label="Small model (your runs)">${snaps}</optgroup>` : "");
+    $("#try-ask").disabled = !(ollama || snaps);
+  }
+  if(MODE !== "models") return;
+  for(const name of [...picked]) if(!localInfo.models.includes(name)) picked.delete(name);
+  const base = $("#v-base").value;
+  $("#v-base").innerHTML = (localInfo.details || []).filter(m => !m.variant).map(m => `<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("");
+  if(localInfo.models.includes(base)) $("#v-base").value = base;
+  $("#m-status").textContent = localInfo.available
+    ? `${localInfo.models.length} model${localInfo.models.length === 1 ? "" : "s"} found in Ollama. Each task gets one deterministic answer (temperature 0, thinking off).`
+    : `${localInfo.error} (looked at ${localInfo.host}).`;
+  renderInstalled();
+}
+
+function bestRun(model, set){
+  return localData.runs.filter(r => r.model === model && r.set === set && r.summary)
+    .sort((a, b) => percent(b.summary.tasks_solved, b.summary.tasks_total) - percent(a.summary.tasks_solved, a.summary.tasks_total))[0];
+}
+
+function renderInstalled(){
+  const models = localInfo?.details || [];
+  const score = r => r ? `${r.summary.tasks_solved} / ${r.summary.tasks_total}` : "—";
+  const rows = models.map(m => {
+    const variant = m.variant ? `<span class="vtag" title="${esc(m.variant.system)}">made here from ${esc(m.variant.base)}</span>` : "";
+    const remove = m.variant ? `<button class="ghost small" data-delete="${esc(m.name)}">${armedDelete === m.name ? "Click again to delete" : "Delete"}</button>` : "";
+    return `<tr><td class="check"><input type="checkbox" data-pick="${esc(m.name)}" ${picked.has(m.name) ? "checked" : ""} aria-label="Select ${esc(m.name)}"></td>
+      <td><b>${esc(m.name)}</b>${variant}${remove}</td><td>${esc(m.family || "—")}</td><td class="num">${esc(m.parameters || "—")}</td>
+      <td>${esc(m.quantization || "—")}</td><td class="num">${gigabytes(m.size)}</td>
+      <td class="num">${score(bestRun(m.name, "course"))}</td></tr>`;
+  }).join("");
+  const all = models.length && models.every(m => picked.has(m.name));
+  $("#m-table").innerHTML = models.length ? `<thead><tr><th class="check"><input type="checkbox" id="m-all" ${all ? "checked" : ""} aria-label="Select all"></th>
+      <th>Model</th><th>Family</th><th class="num">Parameters</th><th>Quantization</th><th class="num">On disk</th><th class="num">Best · course tasks</th></tr></thead><tbody>${rows}</tbody>`
+    : `<tbody><tr><td class="note">No models yet. Install one in Terminal, for example <code>ollama pull qwen3:8b</code>, then click "Refresh list".</td></tr></tbody>`;
+  updateRunButton();
+}
+
+function updateRunButton(){
+  const busy = lastJob?.running || localData.queued.length;
+  $("#m-run").disabled = !picked.size || Boolean(busy);
+  $("#m-run").textContent = picked.size > 1 ? `Test ${picked.size} models ▶` : "Test selected ▶";
+}
+
+function chosenModelLevels(){ return [...document.querySelectorAll("#m-levels input:checked")].map(i => Number(i.value)); }
+
+function fillLocalLevels(){
+  if(MODE !== "models" || !ladderData) return;
+  const usable = ladderData.levels.filter(l => l.families.length);
+  $("#m-levels").innerHTML = usable.map(l => `<label><input type="checkbox" value="${l.level}" ${l.level <= 4 ? "checked" : ""}> ${l.level}</label>`).join("");
+}
+
+if(MODE === "models"){
+  $("#m-table").addEventListener("change", event => {
+    if(event.target.id === "m-all"){
+      for(const m of localInfo.models) event.target.checked ? picked.add(m) : picked.delete(m);
+      renderInstalled();
+    }else if(event.target.dataset.pick){
+      event.target.checked ? picked.add(event.target.dataset.pick) : picked.delete(event.target.dataset.pick);
+      renderInstalled();
+    }
+  });
+  $("#m-table").addEventListener("click", async event => {
+    const name = event.target.dataset?.delete;
+    if(!name) return;
+    $("#m-error").textContent = "";
+    if(armedDelete !== name){  // deleting removes the model from Ollama, so it takes a second click
+      armedDelete = name; renderInstalled();
+      setTimeout(() => { if(armedDelete === name){ armedDelete = null; renderInstalled(); } }, 5000);
+      return;
+    }
+    armedDelete = null;
+    try{ await api("/api/local-models/delete", {name}); picked.delete(name); await loadLocalModels(); }
+    catch(error){ $("#m-error").textContent = error.message; }
+  });
+  $("#m-set").addEventListener("change", async () => {
+    const levels = $("#m-set").value === "levels";
+    $("#m-levels-box").classList.toggle("hidden", !levels);
+    if(levels && !ladderData){ ladderData = await api("/api/ladder"); fillLocalLevels(); }
+  });
+  $("#m-refresh").addEventListener("click", loadLocalModels);
+  $("#m-run").addEventListener("click", () => startModelTests([...picked]));
+  $("#m-stop").addEventListener("click", async () => { await api("/api/stop", {}).catch(() => {}); await tick(true); });
+  $("#m-filter").addEventListener("click", event => {
+    const set = event.target.dataset?.set;
+    if(!set) return;
+    boardSet = set;
+    for(const b of document.querySelectorAll("#m-filter button")) b.classList.toggle("on", b.dataset.set === set);
+    renderLocalRuns();
+  });
+  $("#v-template").addEventListener("click", () => { $("#v-system").value = LAB_RULES; });
+  $("#v-base").addEventListener("change", () => { if(!$("#v-name").dataset.touched) suggestVariantName(); });
+  $("#v-name").addEventListener("input", () => { $("#v-name").dataset.touched = "1"; });
+  $("#v-create").addEventListener("click", () => createVariant(false));
+  $("#v-create-test").addEventListener("click", () => createVariant(true));
+}
+
+function suggestVariantName(){
+  const base = $("#v-base").value.replace(/:latest$/, "").replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
+  if(base) $("#v-name").value = `${base}-rules`;
+}
+
+async function startModelTests(models){
+  $("#m-error").textContent = "";
+  const body = {models, set:$("#m-set").value};
+  if(body.set === "levels") body.levels = chosenModelLevels();
+  boardSet = body.set;
+  for(const b of document.querySelectorAll("#m-filter button")) b.classList.toggle("on", b.dataset.set === boardSet);
+  try{ await api("/api/local-runs", body); await tick(true); return true; }
+  catch(error){ $("#m-error").textContent = error.message; return false; }
+}
+
+async function createVariant(thenTest){
+  $("#v-error").textContent = ""; $("#v-ok").textContent = "";
+  const base = $("#v-base").value, name = $("#v-name").value.trim().toLowerCase();
+  for(const b of ["#v-create", "#v-create-test"]) $(b).disabled = true;
+  $("#v-ok").textContent = "Creating the model in Ollama…";
+  try{
+    const made = await api("/api/local-models/create", {base, name, system:$("#v-system").value});
+    await loadLocalModels();
+    $("#v-ok").textContent = `${made.model} is ready.`;
+    if(thenTest){
+      // answers are deterministic, so a finished test of the original on the same set is reused instead of repeated
+      const set = $("#m-set").value, levels = set === "levels" ? chosenModelLevels().join(",") : "";
+      const tested = localData.runs.some(r => r.model === base && r.set === set && r.summary && (r.levels || []).join(",") === levels);
+      const models = tested ? [made.model] : [base, made.model];
+      picked.clear(); models.forEach(m => picked.add(m)); renderInstalled();
+      if(await startModelTests(models)) $("#v-ok").textContent = tested
+        ? `${made.model} is ready and being tested now. ${base} was already tested on this set; compare both in the leaderboard.`
+        : `${made.model} is ready. Testing it against ${base} now; results appear in the leaderboard.`;
+      document.querySelector("#m-queue").scrollIntoView({behavior:"smooth", block:"center"});
+    }
+  }catch(error){ $("#v-ok").textContent = ""; $("#v-error").textContent = error.message; }
+  for(const b of ["#v-create", "#v-create-test"]) $(b).disabled = false;
+}
+
+async function refreshLocalRuns(){
+  localData = await api("/api/local-runs");
+  renderLocalRuns();
+  if(localInfo) renderInstalled();
+}
+
+function referenceRows(){
+  const ref = localData.reference || {};
+  const rows = boardSet === "course" ? (ref.course ? [ref.course] : []) : ref.levels || [];
+  return rows.map(r => `<tr class="ref"><td></td><td><i>Small model · ${esc(r.name)}</i></td><td>${boardSet === "course" ? "24 course tasks" : esc(levelText(r.levels || [1]))}</td>
+    <td class="num">${r.solved} / ${r.total}${r.by_level ? `<br><span class="note">${Object.entries(r.by_level).map(([lv, [ok, n]]) => `L${lv} ${ok}/${n}`).join(" · ")}</span>` : ""}</td>
+    <td class="num">${percent(r.solved, r.total)}%</td><td class="num" colspan="4">25.7M parameters, trained in this lab</td><td></td></tr>`).join("");
+}
+
+function renderLocalRuns(){
+  if(MODE !== "models") return;
+  const runs = localData.runs.filter(r => r.set === boardSet);
+  const done = runs.filter(r => r.summary).sort((a, b) =>
+    percent(b.summary.tasks_solved, b.summary.tasks_total) - percent(a.summary.tasks_solved, a.summary.tasks_total)
+    || b.summary.tokens_per_second - a.summary.tokens_per_second);
+  const open = runs.filter(r => !r.summary);
+  const variants = Object.fromEntries((localInfo?.details || []).filter(m => m.variant).map(m => [m.name, m.variant.base]));
+  const queued = boardSet === $("#m-set").value ? localData.queued.map(m => `<tr><td></td><td>${esc(m)}</td><td colspan="7" class="note">waiting, starts after the running test</td><td>queued</td></tr>`).join("") : "";
+  const row = (r, rank) => {
+    const s = r.summary;
+    const set = r.set === "course" ? "24 course tasks" : esc(levelText(r.levels || []));
+    const perLevel = r.set === "levels" && Object.keys(r.by_level).length
+      ? `<br><span class="note">${Object.entries(r.by_level).map(([lv, [ok, n]]) => `L${lv} ${ok}/${n}`).join(" · ")}</span>` : "";
+    const status = r.status === "running" ? `running ${r.progress} / ${r.total}` : r.status === "failed" ? "error (see Live log)" : r.status;
+    const origin = variants[r.model] ? `<span class="vtag">from ${esc(variants[r.model])}</span>` : "";
+    return `<tr class="pick ${localDetail === r.id ? "sel" : ""}" data-run="${esc(r.id)}">
+      <td class="rank">${rank || ""}</td><td>${esc(r.model)}${origin}</td><td>${set}</td>
+      <td class="num">${s ? `${s.tasks_solved} / ${s.tasks_total}` : "—"}${perLevel}</td><td class="num">${s ? `${percent(s.tasks_solved, s.tasks_total)}%` : "—"}</td>
+      <td class="num">${s ? tokens(s.read) : "—"}</td><td class="num">${s ? tokens(s.written) : "—"}</td>
+      <td class="num">${s ? shortDuration(s.seconds) : "—"}</td><td class="num">${s ? `${s.tokens_per_second} tok/s` : "—"}</td>
+      <td>${status} <button class="ghost small" data-archive-run="${esc(r.id)}">Archive</button></td></tr>`;
+  };
+  const body = open.map(r => row(r)).join("") + queued + done.map((r, i) => row(r, i + 1)).join("") + referenceRows();
+  $("#lm-table").innerHTML = `<thead><tr><th>#</th><th>Model</th><th>Test set</th><th class="num">Solved</th><th class="num">Score</th><th class="num">Tokens read</th>
+      <th class="num">Tokens written</th><th class="num">Time</th><th class="num">Speed</th><th>Status</th></tr></thead>
+    <tbody>${body || `<tr><td colspan="10" class="note">No tests on this set yet. Tick models above and click "Test selected".</td></tr>`}</tbody>`;
+}
+
+if(MODE === "models"){
+  $("#lm-table").addEventListener("click", async event => {
+    const archiveId = event.target.dataset?.archiveRun;
+    if(archiveId){
+      event.stopPropagation();
+      try{ await api("/api/local-runs/archive", {id:archiveId}); if(localDetail === archiveId){ localDetail = null; $("#lm-detail").innerHTML = ""; } await refreshLocalRuns(); }
+      catch(error){ $("#m-error").textContent = error.message; }
+      return;
+    }
+    const row = event.target.closest("tr[data-run]");
+    if(!row) return;
+    localDetail = row.dataset.run;
+    renderLocalRuns();
+    localResult = await api(`/api/local-run?id=${encodeURIComponent(localDetail)}`);
+    showAllFailures = false;
+    renderLocalDetail();
+  });
+  $("#lm-detail").addEventListener("click", event => {
+    if(event.target.id === "lm-more"){ showAllFailures = true; renderLocalDetail(); }
+  });
+}
+
+function renderLocalDetail(){
+  const result = localResult || {};
+  const wrong = (result.episodes || []).filter(e => !e.passed);
+  const shown = showAllFailures ? wrong : wrong.slice(0, FAILURES_SHOWN);
+  const more = wrong.length > shown.length ? `<div class="actions"><button class="ghost" id="lm-more">Show all ${wrong.length} failed answers</button></div>` : "";
+  $("#lm-detail").innerHTML = `<div class="card" style="margin-top:16px"><div class="label">${esc(result.model || "")} · answers that failed (${wrong.length} of ${(result.episodes || []).length})</div>`
+    + (shown.map(e => `<div class="ep" style="grid-template-columns:minmax(200px,1fr) 2fr">
+        <div class="q"><div class="label">${esc(familyName(e.family))} · level ${e.level}</div>${esc(describe(e.prompt))}<br><code>${esc(e.task)}</code></div>
+        <div class="res"><pre>${esc(e.code)}</pre>${verdict(e)}<span class="note">${tokens(e.read)} read · ${tokens(e.written)} written · ${e.seconds} s</span></div></div>`).join("")
+      || `<p class="note">${result.episodes ? "Every answer passed." : "No answers yet."}</p>`) + more + `</div>`;
+}
+
+let lastJob = null, modelsTicks = 0, wasRunningLocal = false;
+async function tickModels(force){
+  const job = await api("/api/job");
+  lastJob = job;
+  setConnection(true);
+  const local = job.running && String(job.exp).startsWith("local:");
+  modelsTicks += 1;
+  if(force || local || wasRunningLocal || modelsTicks >= 5){ await refreshLocalRuns(); modelsTicks = 0; }
+  wasRunningLocal = local;
+  const run = local ? localData.runs.find(r => `local:${r.id}` === job.exp) : null;
+  $("#m-queue").textContent = local
+    ? `Running now: ${run?.model || job.exp_name}${run ? ` · ${run.progress} / ${run.total} tasks` : ""}` + (localData.queued.length ? ` · next: ${localData.queued.join(", ")}` : "")
+    : job.running ? `${job.exp_name} is training right now. Model tests can start when it finishes.` : "";
+  $("#m-stop").classList.toggle("hidden", !local);
+  document.title = local && run ? `${run.progress}/${run.total} · ${run.model} · Models` : "Models";
+  $("#log").textContent = job.log.length ? job.log.join("\n") : "No log yet.";
+  updateRunButton();
+}
+
+/* ---------- polling ---------- */
+async function refreshOverview(){
+  overviewData = await api(`/api/overview?kind=${MODE}`);
+  renderExperimentBar();
+  if(currentExp) renderComparison();
+}
+
+function setConnection(ok){
+  $("#conn").textContent = ok ? "Connected · live" : "Not connected: the lab in Terminal may be closed";
+  $("#conn").classList.toggle("off", !ok);
+}
+
+let previous = {}, previousExp = null, ticking = false, overviewAge = 0;
+async function tick(force){
+  if(ticking && !force) return;  // a slow answer must not stack up requests
+  ticking = true;
+  try{
+    if(MODE === "models"){ await tickModels(force); return; }
+    if(MODE === "ladder" && !ladderData){ await reloadLadder(); loadTryTask(); }
+    overviewAge += 1;
+    if(!overviewData || force || overviewAge >= 5){ await refreshOverview(); overviewAge = 0; }
+    setConnection(true);
+    if(!currentExp){ previousExp = null; return; }
+    let state;
+    try{ state = await api(withExp("/api/state")); }
+    catch(error){
+      if(String(error.message).includes("Unknown experiment")){ selectExperiment(overviewData.experiments[0]?.id || null); return; }
+      throw error;
+    }
+    lastState = state;
+    const status = key => state.stages[key].status;
+    const expChanged = force || previousExp !== currentExp;
+    const changed = key => expChanged || previous[key] !== status(key);
+    if(!expChanged && STAGE_ORDER.some(changed)){ await refreshOverview(); overviewAge = 0; }
+    renderStages(state);
+    renderSnapshots(state.snapshots, state.families);
+    $("#log").textContent = state.job.log.length ? state.job.log.join("\n") : "No log yet.";
+    let pretrain = null, rl = null;
+    if(changed("pretrain") || status("pretrain") === "running") drawPretrain(pretrain = await api(withExp("/api/pretrain")), status("pretrain"), state.stages.pretrain.total);
+    if(changed("rl") || status("rl") === "running") drawRL(rl = await api(withExp("/api/rl")), status("rl"), state.stages.rl.total);
+    if(changed("pretrain") || changed("rl")) drawFacts(pretrain || await api(withExp("/api/pretrain")), rl || await api(withExp("/api/rl")));
+    if(changed("eval_before") || changed("eval_after")) drawEval(await api(withExp("/api/eval")), state.stages.eval_after.total);
+    if(MODE === "ladder" && (STAGE_ORDER.some(changed) || status("rl") === "running")) drawBreaks(await api(withExp("/api/levels")));
+    previous = Object.fromEntries(STAGE_ORDER.map(key => [key, status(key)]));
+    previousExp = currentExp;
+  }catch{
+    setConnection(false);
+  }finally{ ticking = false; }
+}
+window.addEventListener("hashchange", () => {
+  const id = new URLSearchParams(location.hash.slice(1)).get("exp");
+  if(id && id !== currentExp) selectExperiment(id);
+});
+tick(true).then(loadLocalModels).then(() => { if(MODE === "models"){ suggestVariantName(); renderLocalRuns(); } });
+setInterval(() => tick(false), 2000);
+</script>
+</body>
+</html>
