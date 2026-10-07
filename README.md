@@ -1,5 +1,7 @@
 # Code Model Lab
 
+[![Tests](https://github.com/ChadSaglam/code-model-lab/actions/workflows/tests.yml/badge.svg)](https://github.com/ChadSaglam/code-model-lab/actions/workflows/tests.yml)
+
 A local lab for code models. Train a small GLM-style model from random weights, test it on harder and harder Python tasks, and put it side by side with the models installed in Ollama, all on the same tasks and hidden tests, from one browser page on your own computer.
 
 ![Model Lab: stages, experiment comparison and training curves](docs/images/model-lab.png)
