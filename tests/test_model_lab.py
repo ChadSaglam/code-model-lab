@@ -148,6 +148,7 @@ def test_task_lab_run_needs_levels(server):
 import subprocess  # noqa: E402
 
 local_models = load("local_models")
+text_tasks = load("text_tasks")
 
 
 def run_try(request: dict, env: dict | None = None) -> dict:
@@ -231,7 +232,11 @@ def fake_ollama():
                 return self._send({"status": "success"})
             if "think" in request:  # behave like a model without a thinking mode
                 return self._send({"error": "model does not support thinking"}, 400)
-            name, args = re.search(r"def (\w+)\(([^)]*)\):", request["prompt"]).groups()
+            match = re.search(r"def (\w+)\(([^)]*)\):", request["prompt"])
+            if match is None:  # a text task: parrot the prompt's last line as the answer
+                line = request["prompt"].strip().splitlines()[-1]
+                return self._send({"response": line, "prompt_eval_count": 40, "eval_count": 12})
+            name, args = match.groups()
             self._send({"response": f"```python\ndef {name}({args}):\n    return {args.split(',')[0]} + 1\n```",
                         "prompt_eval_count": 40, "eval_count": 12})
 
@@ -256,6 +261,60 @@ def test_local_model_test_set_writes_a_result_file(fake_ollama, tmp_path):
     assert result["summary"]["tasks_total"] == 24
     assert result["summary"]["tasks_solved"] == 8  # only "increment" is answered correctly by the fake
     assert result["summary"]["read"] == 24 * 40 and result["summary"]["written"] == 24 * 12
+
+
+# ---------------------------------------------------------------- text-answer tasks
+
+def test_exact_match_normalises_whitespace():
+    assert text_tasks.exact_match("hello   world", "  hello world  ")
+    assert text_tasks.exact_match("a\nb\tc", "a b c")
+    assert not text_tasks.exact_match("ja", "nein")
+
+
+def test_json_fields_match_compares_named_fields_and_survives_malformed():
+    assert text_tasks.json_fields_match({"total": 100, "vat": 7.7}, '{"total": 100, "vat": 7.7, "extra": 1}')
+    assert not text_tasks.json_fields_match({"total": 100}, '{"total": 99}')
+    assert not text_tasks.json_fields_match({"missing": 1}, '{"total": 100}')  # named field absent
+    assert not text_tasks.json_fields_match({"total": 100}, "not json at all")  # malformed → wrong, not crash
+    assert not text_tasks.json_fields_match({"total": 100}, "[1, 2, 3]")  # JSON but not an object
+
+
+def test_numeric_match_within_tolerance_and_survives_non_numbers():
+    assert text_tasks.numeric_match(100.0, "100.4", 0.5)
+    assert text_tasks.numeric_match(100.0, "  99.6 ", 0.5)
+    assert not text_tasks.numeric_match(100.0, "101", 0.5)
+    assert not text_tasks.numeric_match(100.0, "abc", 0.5)  # non-numeric → wrong, not crash
+    assert not text_tasks.numeric_match(100.0, "", 0.5)
+    assert not text_tasks.numeric_match(100.0, "inf", 0.5)
+
+
+def test_score_dispatches_by_check_type_and_rejects_unknown_kind():
+    assert text_tasks.score(text_tasks.TextTask("e", "p", "exact", "ja"), "  ja ")["passed"]
+    assert text_tasks.score(text_tasks.TextTask("j", "p", "json", {"a": 1}), '{"a": 1, "b": 2}')["passed"]
+    assert text_tasks.score(text_tasks.TextTask("n", "p", "numeric", 5.0, 0.1), "5.05")["passed"]
+    assert text_tasks.score(text_tasks.TextTask("n", "p", "numeric", 5.0, 0.1), "oops")["status"] == "failed"
+    with pytest.raises(ValueError, match="one of"):
+        text_tasks.TextTask("x", "p", "regex", "y")
+
+
+def test_text_task_never_runs_the_answer_as_code():
+    # an answer that looks like Python is compared as text, never executed or sandbox-validated
+    task = text_tasks.TextTask("x", "p", "exact", "import os")
+    assert text_tasks.score(task, "import os")["passed"]
+    assert not text_tasks.score(task, "import sys")["passed"]
+
+
+def test_text_task_is_scored_against_a_local_model(fake_ollama, monkeypatch):
+    monkeypatch.setattr(local_models, "OLLAMA", fake_ollama)  # the fake parrots the prompt's last line
+    good = local_models.answer_text_task("fake:latest",
+                                         text_tasks.TextTask("num-1", "Reply with the total.\n42", "numeric", 42.0, 0.5))
+    assert good["passed"] and good["read"] == 40 and good["written"] == 12
+    wrong = local_models.answer_text_task("fake:latest",
+                                          text_tasks.TextTask("num-2", "Reply with the total.\n7", "numeric", 42.0, 0.5))
+    assert not wrong["passed"] and wrong["status"] == "failed"
+    as_json = local_models.answer_text_task("fake:latest",
+                                            text_tasks.TextTask("json-1", 'Reply with JSON.\n{"vat": 7.7}', "json", {"vat": 7.7}))
+    assert as_json["passed"]
 
 
 # ---------------------------------------------------------------- Models page
