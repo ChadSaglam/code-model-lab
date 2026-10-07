@@ -1,0 +1,25 @@
+{
+  "id": "example-1",
+  "name": "Example pack",
+  "tasks": [
+    {
+      "id": "exact-1",
+      "input": "Welches Konto für Büromaterial im KMU-Kontenrahmen? Antworte nur mit der Nummer.",
+      "expected": "6500",
+      "check": "exact"
+    },
+    {
+      "id": "json-1",
+      "input": "Lies den Beleg und gib Total und MWST-Satz als JSON zurück.",
+      "expected": {"total": 108.1, "vat_rate": 8.1},
+      "check": "json"
+    },
+    {
+      "id": "numeric-1",
+      "input": "Wie hoch ist die MWST auf 100.00 CHF zu 8.1%? Antworte nur mit der Zahl.",
+      "expected": 8.1,
+      "check": "numeric",
+      "tolerance": 0.05
+    }
+  ]
+}
