@@ -22,6 +22,7 @@ A local lab for code models. Train a small GLM-style model from random weights, 
 
 - [Results](#results)
 - [Quick start](#quick-start)
+- [Development](#development)
 - [Using Model Lab](#using-model-lab)
 - [Using Task Lab](#using-task-lab)
 - [Using Models (Ollama)](#using-models-ollama)
@@ -85,6 +86,22 @@ You should see `37 passed`.
 Your browser opens **http://127.0.0.1:8765**. Keep the Terminal window open while you use the lab; press `Ctrl + C` there to stop it.
 
 > On Windows, use `.venv\Scripts\python` instead of `.venv/bin/python`.
+
+---
+
+## Development
+
+With `make` installed, three targets wrap the steps above:
+
+```bash
+make setup     # create .venv and install the pinned requirements
+make check     # run the unit tests; stops on the first failure
+make dev       # start the lab at http://127.0.0.1:8765
+```
+
+`make check` is the gate to run before staging a change. Contributor conventions — the branch
+rule, commit style and what does not change without the owner — are in [AGENTS.md](AGENTS.md);
+the to-do list is in [ROADMAP.md](ROADMAP.md).
 
 ---
 
