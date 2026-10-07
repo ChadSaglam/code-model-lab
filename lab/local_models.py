@@ -185,3 +185,21 @@ def check(task, source: str) -> dict:
     passed = sum(case["ok"] for case in cases)
     return {"status": "passed" if passed == len(cases) else "failed", "passed": passed == len(cases), "message": "",
             "tests_passed": passed, "tests_total": len(cases), "cases": cases}
+
+
+def build_text_prompt(task) -> str:
+    """A text task is asked as it is written: no coding rules, no sandbox, just the task's own prompt."""
+    return task.prompt
+
+
+def check_text(task, answer: str) -> dict:
+    """Score a plain-text answer by the task's rule. Runs no code and never enters the sandbox path."""
+    import text_tasks
+    return text_tasks.score(task, answer)
+
+
+def answer_text_task(model: str, task, *, timeout: float = 300) -> dict:
+    """Ask a local model a text task and score its plain-text answer against the task's rule."""
+    reply = generate(model, build_text_prompt(task), timeout=timeout)
+    return {**check_text(task, reply["text"]), "raw": reply["text"], "read": reply["read"],
+            "written": reply["written"], "seconds": reply["seconds"]}

@@ -8,7 +8,6 @@ real data are the owner's calls and are not listed here. "Gate:" names what must
 - [ ] B-02 — Test workflow and status badge: a release workflow runs `pytest -q` on Python 3.12 with CPU torch, and the README shows its status badge; done when the run is green and the badge renders.
 
 ## Next
-- [ ] B-03 — Text-answer task kind: a non-code task kind that checks an answer by exact match, JSON field match, or number within a tolerance; done when all three check types work and are unit-tested.
 - [ ] B-04 — Task-pack file format: a JSON pack with id, input text, expected answer and check type, validated on load the way level-5 tasks are today; done when a malformed pack is rejected with a clear error and a valid one loads, covered by tests.
 - [ ] B-05 — Bookkeeping B1 pack: 60–100 synthetic Swiss bank-transaction lines in German, each mapped to the correct KMU chart-of-accounts number; done when the pack loads, validates and reads like real statements.
 - [ ] B-06 — Invoice B2 pack: 30–50 synthetic invoice texts carrying date, total, VAT rate and VAT amount as JSON fields; done when the pack loads and validates against the JSON-field check.
@@ -24,3 +23,4 @@ real data are the owner's calls and are not listed here. "Gate:" names what must
 - [ ] B-14 — Varying constants and held-out task types: as noted in the README limitations and ADR-004, add tasks whose constants vary and task types held out from training; done when they run in Task Lab and the leaderboard reflects them.
 
 ## Done
+- [x] B-03 — Text-answer task kind: `lab/text_tasks.py` adds a non-code `TextTask` and three pure checks — `exact_match` (equal after whitespace is collapsed), `json_fields_match` (answer parses as a JSON object and the named fields equal the expected ones) and `numeric_match` (answer parses as a finite number within a tolerance); a malformed JSON or non-numeric answer scores wrong instead of raising. Text tasks never touch the sandbox path (no `validate_source`, no `exec`): `local_models.answer_text_task`/`check_text`/`build_text_prompt` ask a local model and score its plain text by rule. Verified by unit tests in `tests/test_model_lab.py` covering all three checks (including malformed JSON, non-numeric and infinite answers, an answer that is Python code compared as text, and an unknown check kind rejected) plus a stand-in-Ollama wiring test; `make check` is the owner's gate.
