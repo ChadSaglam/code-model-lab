@@ -79,9 +79,9 @@ def parse_tests(text: str) -> list[list]:
         try:
             arguments = ast.literal_eval(f"({left.strip()},)")
             expected = ast.literal_eval(right.strip())
-        except (ValueError, SyntaxError):
+            json.dumps(expected)  # must survive being saved
+        except (ValueError, SyntaxError, TypeError):
             raise ValueError(f"Test line {number}: use plain Python values such as 3, 'text', [1, 2] or True.") from None
-        json.dumps(expected)  # must survive being saved
         cases.append([list(arguments), expected])
     if len(cases) < 2:
         raise ValueError("Add at least two tests, one per line.")
