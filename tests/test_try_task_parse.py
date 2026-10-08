@@ -98,8 +98,6 @@ def test_only_the_last_arrow_splits_input_from_expected():
 
 # ---------------------------------------------------------------- known bug
 
-@pytest.mark.xfail(strict=True, reason="BUG: an expected value that is a valid literal but not "
-                   "JSON-serialisable (e.g. a set) escapes as TypeError, not a friendly ValueError")
 def test_unsaveable_expected_value_is_rejected_with_a_friendly_error():
     # The expected value must survive json.dumps to be saved; a set literal parses but cannot be
     # serialised, so it should be rejected the same friendly way a non-literal is.
