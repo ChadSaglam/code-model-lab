@@ -44,6 +44,12 @@ def test_first_fence_is_used_when_none_names_the_target():
     assert local_models.extract_function(reply, "missing") == "def helper():\n    return 1\n"
 
 
+def test_bare_fence_without_a_language_tag_is_read():
+    # a bare ``` fence that holds the target reads back to the exact body, like a ```python one.
+    reply = "```\ndef foo(a, b):\n    return a + b\n```"
+    assert local_models.extract_function(reply, "foo") == "def foo(a, b):\n    return a + b\n"
+
+
 def test_language_hint_on_the_fence_is_not_treated_as_code():
     # ```py as well as ```python must open a block without leaking the hint into the body.
     reply = "```py\ndef foo():\n    return 7\n```"
@@ -65,6 +71,12 @@ def test_a_statement_back_at_the_def_level_ends_the_function():
     assert local_models.extract_function(reply, "foo") == "def foo(x):\n    y = x\n    return y\n"
 
 
+def test_a_second_top_level_function_ends_the_first():
+    # a trailing sibling def (after a blank line) must not be folded into the first function.
+    reply = "def foo(x):\n    return x\n\ndef other(y):\n    return y\n"
+    assert local_models.extract_function(reply, "foo") == "def foo(x):\n    return x\n"
+
+
 def test_blank_lines_inside_the_body_are_kept():
     reply = "def foo(x):\n    a = x\n\n    return a\ntrailing"
     assert local_models.extract_function(reply, "foo") == "def foo(x):\n    a = x\n\n    return a\n"
@@ -72,6 +84,10 @@ def test_blank_lines_inside_the_body_are_kept():
 
 def test_windows_line_endings_are_normalised():
     assert local_models.extract_function("def foo():\r\n    return 1\r\n", "foo") == "def foo():\n    return 1\n"
+
+
+def test_empty_answer_returns_a_single_newline():
+    assert local_models.extract_function("", "foo") == "\n"
 
 
 def test_result_always_ends_with_a_single_newline():
