@@ -32,6 +32,13 @@ def test_thinking_block_is_stripped_before_the_function():
     assert local_models.extract_function(reply, "foo") == "def foo():\n    return 2\n"
 
 
+def test_thinking_block_is_stripped_before_a_fenced_function():
+    # the <think> section names a different, wrong body; it must not leak past the fence either.
+    reply = ("<think>I will write def foo(a, b): return 999</think>\n"
+             "```python\ndef foo(a, b):\n    return a + b\n```")
+    assert local_models.extract_function(reply, "foo") == "def foo(a, b):\n    return a + b\n"
+
+
 def test_fenced_block_that_holds_the_target_is_chosen_over_others():
     reply = ("```python\ndef other():\n    return 0\n```\n"
              "and the real one:\n"
@@ -42,6 +49,12 @@ def test_fenced_block_that_holds_the_target_is_chosen_over_others():
 def test_first_fence_is_used_when_none_names_the_target():
     reply = "```\ndef helper():\n    return 1\n```"
     assert local_models.extract_function(reply, "missing") == "def helper():\n    return 1\n"
+
+
+def test_first_fence_with_only_prose_is_returned_as_is():
+    # when no fence names the target and the first holds no def at all, its prose is handed back.
+    reply = "```python\njust some prose, no function here\n```"
+    assert local_models.extract_function(reply, "missing") == "just some prose, no function here\n"
 
 
 def test_bare_fence_without_a_language_tag_is_read():
