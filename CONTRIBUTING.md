@@ -25,7 +25,7 @@ make dev       # start the lab at http://127.0.0.1:8765
 .venv/bin/python -m pytest -q
 ```
 
-A full pass is `37 passed`. Eleven of those tests bind a local HTTP port; they pass on a normal
+A full pass is `181 passed`. Twelve of those tests bind a local HTTP port; they pass on a normal
 machine but cannot run where binding a port is blocked — skip them there, do not delete them.
 
 ## Which checks a change must pass
@@ -41,8 +41,14 @@ machine but cannot run where binding a port is blocked — skip them there, do n
 All tests are in `tests/`:
 
 - `test_lab.py` — the model: tokenizer, attention, layer rhythm, experts, reference solutions.
+- `test_evaluator.py` — code verifier (validate_source): rejection rules and type-strict scoring.
+- `test_ladder.py` — ladder.py: level parsing, custom-task loading, family/level maps.
+- `test_ladder_levels.py` — ladder.py: level-selection logic (parse_levels, family_rows, family_levels).
+- `test_local_models_extract.py` — answer extraction from model replies and friendly error messages.
 - `test_model_lab.py` — Task Lab levels, level-5 validation, answer extraction, local-model runs,
   model queues and instruction variants (stand-in Ollama), settings validation, server safety rules.
+- `test_task_packs.py` — task-pack loading and validation (B-04): valid packs and every rejection path.
+- `test_try_task_parse.py` — level-5 test-input parser (parse_tests): literals, edge cases, rejection.
 - `test_vision.py`, `test_full_25m_vision_digit_pilot.py` — the optional image path.
 
 ## Branches and releases
