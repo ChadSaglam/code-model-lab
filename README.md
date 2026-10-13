@@ -77,7 +77,7 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q
 ```
 
-You should see `37 passed`.
+You should see `181 passed`.
 
 **4. Start the lab**
 
@@ -216,6 +216,8 @@ The course code is never modified; the lab only runs it and reads its output. De
 │   ├── ladder.py           Task Lab difficulty levels and their hidden tests
 │   ├── local_models.py     Ollama client (test, create, delete), answer extraction, safe test runs
 │   ├── ollama_eval.py      runs a test set against a local model
+│   ├── task_packs.py       loads and validates JSON task packs (B-04)
+│   ├── text_tasks.py       TextTask type and exact / json / numeric checks (B-03)
 │   ├── try_task.py         one task: your code, a local model or a snapshot
 │   ├── custom_tasks.json   your level-5 tasks (created when you add one)
 │   └── README.md           lab details
@@ -244,8 +246,14 @@ The course code is never modified; the lab only runs it and reads its output. De
 | Test file | Checks |
 |---|---|
 | `tests/test_lab.py` | tokenizer round trip, causal attention, 3 : 1 layer rhythm, expert usage, reference solutions (course) |
-| `tests/test_vision.py`, `tests/test_full_25m_vision_digit_pilot.py` | the course's optional image path |
+| `tests/test_evaluator.py` | code verifier (validate_source): rejection rules and type-strict scoring |
+| `tests/test_ladder.py` | ladder.py: level parsing, custom-task loading, family/level maps |
+| `tests/test_ladder_levels.py` | ladder.py: level-selection logic (parse_levels, family_rows, family_levels) |
+| `tests/test_local_models_extract.py` | answer extraction from model replies and friendly error messages |
 | `tests/test_model_lab.py` | Task Lab levels, level-5 validation, answer extraction, local-model runs, model queues and instruction variants (with a stand-in Ollama), settings validation and the server's safety rules |
+| `tests/test_task_packs.py` | task-pack loading and validation (B-04): valid packs and every rejection path |
+| `tests/test_try_task_parse.py` | level-5 test-input parser (parse_tests): literals, edge cases, rejection |
+| `tests/test_vision.py`, `tests/test_full_25m_vision_digit_pilot.py` | the course's optional image path |
 
 ---
 
