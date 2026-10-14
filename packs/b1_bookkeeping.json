@@ -1,0 +1,100 @@
+{
+  "id": "b1",
+  "name": "Bookkeeping B1 — Swiss bank-transaction lines",
+  "tasks": [
+    {"id": "b1-001", "input": "Kontoauszug 04.01.2026 – Dauerauftrag 'Immobilien Talweg AG, Miete Büro Januar', CHF 2'400.00. Auf welches Konto im Schweizer KMU-Kontenrahmen gehört diese Buchung? Antworte nur mit der Kontonummer.", "expected": "6000", "check": "exact"},
+    {"id": "b1-002", "input": "Bankbeleg 03.02.2026 – Belastung 'Verwaltung Rosenhof GmbH, Miete Lagerhalle', CHF 1'150.00. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6000", "check": "exact"},
+    {"id": "b1-003", "input": "Lastschrift 02.03.2026 'Wohnbau Seematt AG – Geschäftslokal Quartalsmiete', CHF 7'050.00. Nenne nur die Kontonummer im KMU-Kontenrahmen.", "expected": "6000", "check": "exact"},
+    {"id": "b1-004", "input": "Kontoauszug 05.04.2026 – 'Parkhaus Zentrum AG, Dauermiete Firmenparkplatz', CHF 180.00. Auf welches Konto gehört das im Schweizer KMU-Kontenrahmen? Nur die Nummer.", "expected": "6000", "check": "exact"},
+    {"id": "b1-005", "input": "Belastung 01.05.2026 'Liegenschaften Bruggmatt, Nebenkosten-Akonto Werkstatt', CHF 320.00. Antworte nur mit der Kontonummer im KMU-Kontenrahmen.", "expected": "6000", "check": "exact"},
+
+    {"id": "b1-006", "input": "Kontoauszug 09.01.2026 – 'Malergeschäft Farbwerk GmbH, Streichen Büroräume', CHF 1'480.60 inkl. 8.1% MWST. Welches Konto im KMU-Kontenrahmen? Nur die Nummer.", "expected": "6100", "check": "exact"},
+    {"id": "b1-007", "input": "Bankbeleg 14.02.2026 – 'Haustechnik Rohrfix AG, Reparatur Heizung', CHF 642.35. Auf welches Konto gehört diese Buchung? Antworte nur mit der Kontonummer.", "expected": "6100", "check": "exact"},
+    {"id": "b1-008", "input": "Lastschrift 18.03.2026 'Liftservice Höhenflug GmbH, Wartungsvertrag', CHF 410.00 inkl. 8.1% MWST. Nenne nur die KMU-Kontonummer.", "expected": "6100", "check": "exact"},
+    {"id": "b1-009", "input": "Belastung 22.04.2026 'Gartenpflege Grünraum, Unterhalt Aussenanlage', CHF 275.80. Welches Konto im Schweizer KMU-Kontenrahmen? Nur die Nummer.", "expected": "6100", "check": "exact"},
+    {"id": "b1-010", "input": "Kontoauszug 02.06.2026 – 'Reinigungsdienst Blitzblank, monatliche Büroreinigung', CHF 540.00. Antworte nur mit der Kontonummer.", "expected": "6100", "check": "exact"},
+    {"id": "b1-011", "input": "Kartenzahlung 11.07.2026 'BauMarkt Werkzeugkiste, Ersatzteile Maschine', CHF 128.90. Auf welches KMU-Konto? Nur die Nummer.", "expected": "6100", "check": "exact"},
+
+    {"id": "b1-012", "input": "Kontoauszug 06.01.2026 – Kartenzahlung 'TankTreff AG, Diesel Lieferwagen', CHF 96.45. Welches Konto im Schweizer KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6200", "check": "exact"},
+    {"id": "b1-013", "input": "Belastung 17.02.2026 'Garage Bergli GmbH, Service und Pneuwechsel Geschäftswagen', CHF 842.30 inkl. 8.1% MWST. Nur die Kontonummer.", "expected": "6200", "check": "exact"},
+    {"id": "b1-014", "input": "Lastschrift 03.03.2026 'Fahrzeugversicherung MobilSicher, Jahresprämie Transporter', CHF 1'240.00. Welches KMU-Konto? Nur die Nummer.", "expected": "6200", "check": "exact"},
+    {"id": "b1-015", "input": "Kontoauszug 28.03.2026 – 'Strassenverkehrsamt, Motorfahrzeugsteuer Firmenwagen', CHF 388.00. Antworte nur mit der Kontonummer im KMU-Kontenrahmen.", "expected": "6200", "check": "exact"},
+    {"id": "b1-016", "input": "Kartenzahlung 12.04.2026 'Autowäsche CleanCar, Reinigung Fahrzeugflotte', CHF 54.00. Auf welches Konto gehört das? Nur die Nummer.", "expected": "6200", "check": "exact"},
+    {"id": "b1-017", "input": "Belastung 20.05.2026 'TankTreff AG, Benzin Aussendienst', CHF 72.80. Nenne nur die KMU-Kontonummer.", "expected": "6200", "check": "exact"},
+    {"id": "b1-018", "input": "Kontoauszug 08.06.2026 – 'Pneuhaus Rollsicher, Winterreifen Lieferwagen', CHF 968.50 inkl. 8.1% MWST. Nur die Kontonummer.", "expected": "6200", "check": "exact"},
+
+    {"id": "b1-019", "input": "Lastschrift 10.01.2026 'Betriebshaftpflicht AllRisk, Jahresprämie', CHF 980.00. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6300", "check": "exact"},
+    {"id": "b1-020", "input": "Belastung 15.02.2026 'Handelsregisteramt, Gebühr Mutation', CHF 60.00. Nur die Kontonummer im Schweizer KMU-Kontenrahmen.", "expected": "6300", "check": "exact"},
+    {"id": "b1-021", "input": "Kontoauszug 03.03.2026 – 'Rechtsschutz JuraPlus, Prämie Betriebsrechtsschutz', CHF 455.00. Welches KMU-Konto? Nur die Nummer.", "expected": "6300", "check": "exact"},
+    {"id": "b1-022", "input": "Belastung 27.03.2026 'Gebäudeversicherung Kanton, Prämie Inventar', CHF 310.50. Antworte nur mit der Kontonummer.", "expected": "6300", "check": "exact"},
+    {"id": "b1-023", "input": "Lastschrift 09.05.2026 'Sachversicherung ProTekt, Betriebsunterbruch-Deckung', CHF 720.00. Nur die Nummer.", "expected": "6300", "check": "exact"},
+    {"id": "b1-024", "input": "Kontoauszug 14.06.2026 – 'Eidg. Amt, Patentgebühr Marke', CHF 550.00. Auf welches Konto im KMU-Kontenrahmen? Nur die Nummer.", "expected": "6300", "check": "exact"},
+
+    {"id": "b1-025", "input": "Lastschrift 07.01.2026 'Elektrizitätswerk Talmatt, Stromrechnung Werkstatt', CHF 486.20 inkl. 8.1% MWST. Welches KMU-Konto? Antworte nur mit der Nummer.", "expected": "6400", "check": "exact"},
+    {"id": "b1-026", "input": "Belastung 05.02.2026 'NetzStrom Genossenschaft, Elektrizität Büro Q4', CHF 212.75. Nur die Kontonummer im KMU-Kontenrahmen.", "expected": "6400", "check": "exact"},
+    {"id": "b1-027", "input": "Kontoauszug 11.02.2026 – 'Gasversorgung Flammpunkt AG, Erdgas Heizung', CHF 640.00 inkl. 8.1% MWST. Welches Konto? Nur die Nummer.", "expected": "6400", "check": "exact"},
+    {"id": "b1-028", "input": "Lastschrift 19.03.2026 'Wasserwerk Quellgut, Wasser und Abwasser', CHF 148.30. Antworte nur mit der Kontonummer.", "expected": "6400", "check": "exact"},
+    {"id": "b1-029", "input": "Belastung 02.04.2026 'Entsorgung SauberWeg GmbH, Kehrichtabfuhr Gewerbe', CHF 96.00. Welches KMU-Konto? Nur die Nummer.", "expected": "6400", "check": "exact"},
+    {"id": "b1-030", "input": "Kontoauszug 23.10.2025 – 'Heizöl Wärmequell AG, Lieferung 1500 l', CHF 1'890.40 inkl. 8.1% MWST. Nur die Kontonummer.", "expected": "6400", "check": "exact"},
+
+    {"id": "b1-031", "input": "Kartenzahlung 08.01.2026 'BüroProfi AG, Druckerpapier und Toner', CHF 184.95 inkl. 8.1% MWST. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6500", "check": "exact"},
+    {"id": "b1-032", "input": "Belastung 13.02.2026 'PostDienst Sendewohl, Porto und Versand', CHF 88.40. Nur die Kontonummer.", "expected": "6500", "check": "exact"},
+    {"id": "b1-033", "input": "Lastschrift 01.03.2026 'TeleConnect AG, Internet und Festnetz Büro', CHF 129.00 inkl. 8.1% MWST. Welches KMU-Konto? Nur die Nummer.", "expected": "6500", "check": "exact"},
+    {"id": "b1-034", "input": "Kontoauszug 16.03.2026 – 'DruckWerk Studio, Visitenkarten und Briefpapier', CHF 240.00 inkl. 8.1% MWST. Antworte nur mit der Kontonummer.", "expected": "6500", "check": "exact"},
+    {"id": "b1-035", "input": "Kartenzahlung 04.04.2026 'SchreibWelt, Büromaterial Sortiment', CHF 57.60. Auf welches Konto gehört das im KMU-Kontenrahmen? Nur die Nummer.", "expected": "6500", "check": "exact"},
+    {"id": "b1-036", "input": "Belastung 21.05.2026 'MobilFunk Simnet, Geschäftshandy Abo', CHF 65.00 inkl. 8.1% MWST. Nur die Kontonummer.", "expected": "6500", "check": "exact"},
+    {"id": "b1-037", "input": "Lastschrift 02.06.2026 'FachBlatt Verlag, Abo Branchenzeitschrift', CHF 198.00 inkl. 2.6% MWST. Welches KMU-Konto? Nur die Nummer.", "expected": "6500", "check": "exact"},
+
+    {"id": "b1-038", "input": "Lastschrift 05.01.2026 'CloudNest Hosting, Serverhosting Jahrespaket', CHF 480.00 inkl. 8.1% MWST. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6570", "check": "exact"},
+    {"id": "b1-039", "input": "Belastung 12.02.2026 'DomainHaus, Domainverlängerung firma.ch', CHF 24.90. Nur die Kontonummer.", "expected": "6570", "check": "exact"},
+    {"id": "b1-040", "input": "Kartenzahlung 09.03.2026 'SoftLizenz GmbH, Lizenz Buchhaltungssoftware', CHF 348.00 inkl. 8.1% MWST. Welches KMU-Konto? Nur die Nummer.", "expected": "6570", "check": "exact"},
+    {"id": "b1-041", "input": "Kontoauszug 24.03.2026 – 'ITSupport Byteweise, Wartung Netzwerk', CHF 560.00 inkl. 8.1% MWST. Antworte nur mit der Kontonummer.", "expected": "6570", "check": "exact"},
+    {"id": "b1-042", "input": "Lastschrift 01.04.2026 'DataSafe Backup, Cloud-Backup Abo', CHF 39.90 inkl. 8.1% MWST. Nur die Nummer.", "expected": "6570", "check": "exact"},
+    {"id": "b1-043", "input": "Belastung 18.05.2026 'PixelTools SaaS, Design-Software Monatsabo', CHF 52.00 inkl. 8.1% MWST. Welches Konto im KMU-Kontenrahmen? Nur die Nummer.", "expected": "6570", "check": "exact"},
+
+    {"id": "b1-044", "input": "Belastung 10.01.2026 'WerbeWerk GmbH, Inserat Lokalzeitung', CHF 420.00 inkl. 8.1% MWST. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6600", "check": "exact"},
+    {"id": "b1-045", "input": "Kartenzahlung 15.02.2026 'KlickReichweite, Online-Werbung Kampagne', CHF 300.00. Nur die Kontonummer.", "expected": "6600", "check": "exact"},
+    {"id": "b1-046", "input": "Kontoauszug 03.03.2026 – 'FlyerFabrik, Druck Werbeflyer 5000 Stk', CHF 510.30 inkl. 8.1% MWST. Welches KMU-Konto? Nur die Nummer.", "expected": "6600", "check": "exact"},
+    {"id": "b1-047", "input": "Belastung 20.03.2026 'SportClub Talfeld, Sponsoring Juniorenteam', CHF 800.00. Antworte nur mit der Kontonummer.", "expected": "6600", "check": "exact"},
+    {"id": "b1-048", "input": "Lastschrift 07.04.2026 'MesseBau Standwerk, Messestand Gewerbeausstellung', CHF 1'650.00 inkl. 8.1% MWST. Nur die Nummer.", "expected": "6600", "check": "exact"},
+    {"id": "b1-049", "input": "Kartenzahlung 22.05.2026 'SocialBoost, Werbeanzeigen Social Media', CHF 145.00. Welches Konto im KMU-Kontenrahmen? Nur die Nummer.", "expected": "6600", "check": "exact"},
+
+    {"id": "b1-050", "input": "Kartenzahlung 09.01.2026 'Hotel Alpenblick, Übernachtung Geschäftsreise', CHF 168.00. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6640", "check": "exact"},
+    {"id": "b1-051", "input": "Belastung 16.02.2026 'RegionalBahn, Geschäftsbillett 1. Klasse', CHF 92.00. Nur die Kontonummer.", "expected": "6640", "check": "exact"},
+    {"id": "b1-052", "input": "Kartenzahlung 28.02.2026 'Restaurant Sonnenhof, Geschäftsessen mit Kunde', CHF 134.50 inkl. 8.1% MWST. Welches KMU-Konto? Nur die Nummer.", "expected": "6640", "check": "exact"},
+    {"id": "b1-053", "input": "Kontoauszug 11.03.2026 – 'TaxiFahrt Nachtlinie, Fahrt zum Flughafen', CHF 78.00. Antworte nur mit der Kontonummer.", "expected": "6640", "check": "exact"},
+    {"id": "b1-054", "input": "Belastung 02.04.2026 'LuftReise Ticket, Flug Kundentermin Berlin', CHF 312.00. Nur die Nummer.", "expected": "6640", "check": "exact"},
+    {"id": "b1-055", "input": "Kartenzahlung 19.04.2026 'Parkhaus Messe, Parkgebühr Geschäftstermin', CHF 36.00. Welches Konto im KMU-Kontenrahmen? Nur die Nummer.", "expected": "6640", "check": "exact"},
+    {"id": "b1-056", "input": "Belastung 05.05.2026 'Catering Gaumenfreude, Verpflegung Kundenworkshop', CHF 420.00 inkl. 8.1% MWST. Nur die Kontonummer.", "expected": "6640", "check": "exact"},
+
+    {"id": "b1-057", "input": "Lastschrift 12.01.2026 'Gewerbeverband Region, Jahresmitgliederbeitrag', CHF 350.00. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6700", "check": "exact"},
+    {"id": "b1-058", "input": "Belastung 08.02.2026 'Weiterbildung LernPlus, Kurs Projektmanagement', CHF 680.00. Nur die Kontonummer.", "expected": "6700", "check": "exact"},
+    {"id": "b1-059", "input": "Kartenzahlung 03.03.2026 'FachBuch Handlung, Fachliteratur Steuern', CHF 96.40 inkl. 2.6% MWST. Welches KMU-Konto? Nur die Nummer.", "expected": "6700", "check": "exact"},
+    {"id": "b1-060", "input": "Kontoauszug 17.04.2026 – 'Hilfswerk Lichtblick, Spende', CHF 200.00. Antworte nur mit der Kontonummer.", "expected": "6700", "check": "exact"},
+    {"id": "b1-061", "input": "Belastung 29.05.2026 'Seminarhaus Weitblick, Teilnahme Fachtagung', CHF 540.00 inkl. 8.1% MWST. Nur die Nummer.", "expected": "6700", "check": "exact"},
+
+    {"id": "b1-062", "input": "Kontoauszug 31.01.2026 – 'Kontoführungsgebühr Geschäftskonto', CHF 12.00. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "6940", "check": "exact"},
+    {"id": "b1-063", "input": "Belastung 28.02.2026 'Spesen Zahlungsverkehr Vormonat', CHF 8.50. Nur die Kontonummer.", "expected": "6940", "check": "exact"},
+    {"id": "b1-064", "input": "Kontoauszug 15.03.2026 – 'Gebühr Kreditkarte Geschäft, Jahresgebühr', CHF 120.00. Welches KMU-Konto? Nur die Nummer.", "expected": "6940", "check": "exact"},
+    {"id": "b1-065", "input": "Belastung 31.03.2026 'Bankspesen Auslandzahlung', CHF 25.00. Antworte nur mit der Kontonummer.", "expected": "6940", "check": "exact"},
+    {"id": "b1-066", "input": "Kontoauszug 30.04.2026 – 'Gebühr Zahlungsterminal Miete', CHF 29.00. Nur die Nummer.", "expected": "6940", "check": "exact"},
+
+    {"id": "b1-067", "input": "Belastung 06.01.2026 'Rohstoff Metallwerk, Stahlprofile Produktion', CHF 2'340.00 inkl. 8.1% MWST. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "4000", "check": "exact"},
+    {"id": "b1-068", "input": "Lastschrift 13.02.2026 'HolzLieferant Sägewerk, Rohmaterial Werkstatt', CHF 1'180.50. Nur die Kontonummer.", "expected": "4000", "check": "exact"},
+    {"id": "b1-069", "input": "Kontoauszug 09.03.2026 – 'ChemieBedarf AG, Werkstoffe Fertigung', CHF 865.20 inkl. 8.1% MWST. Welches KMU-Konto? Nur die Nummer.", "expected": "4000", "check": "exact"},
+    {"id": "b1-070", "input": "Belastung 24.04.2026 'TextilRohstoff GmbH, Stoffe für Produktion', CHF 1'540.00. Antworte nur mit der Kontonummer.", "expected": "4000", "check": "exact"},
+
+    {"id": "b1-071", "input": "Lastschrift 07.01.2026 'Grosshandel WarenWelt, Wareneinkauf Verkaufssortiment', CHF 3'120.00 inkl. 8.1% MWST. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "4400", "check": "exact"},
+    {"id": "b1-072", "input": "Belastung 18.02.2026 'Lieferant Frischmarkt, Handelsware Lebensmittel', CHF 940.30 inkl. 2.6% MWST. Nur die Kontonummer.", "expected": "4400", "check": "exact"},
+    {"id": "b1-073", "input": "Kontoauszug 11.03.2026 – 'ImportHaus Fernost, Handelswaren Container', CHF 5'680.00. Welches KMU-Konto? Nur die Nummer.", "expected": "4400", "check": "exact"},
+    {"id": "b1-074", "input": "Lastschrift 26.04.2026 'Depot Getränkewelt, Wiederverkaufsware', CHF 1'265.40 inkl. 8.1% MWST. Antworte nur mit der Kontonummer.", "expected": "4400", "check": "exact"},
+
+    {"id": "b1-075", "input": "Kontoauszug 25.01.2026 – 'Lohnzahlung Mitarbeiter M. Keller, Januar', CHF 5'800.00. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "5000", "check": "exact"},
+    {"id": "b1-076", "input": "Belastung 25.02.2026 'Lohnlauf Februar, Nettolöhne Team', CHF 14'250.00. Nur die Kontonummer.", "expected": "5000", "check": "exact"},
+    {"id": "b1-077", "input": "Kontoauszug 25.03.2026 – 'Gehalt Lernende, März', CHF 1'050.00. Welches KMU-Konto? Nur die Nummer.", "expected": "5000", "check": "exact"},
+
+    {"id": "b1-078", "input": "Lastschrift 10.01.2026 'Ausgleichskasse, AHV/IV/EO-Beiträge Q4', CHF 2'180.00. Welches Konto im KMU-Kontenrahmen? Antworte nur mit der Nummer.", "expected": "5700", "check": "exact"},
+    {"id": "b1-079", "input": "Belastung 20.02.2026 'Pensionskasse VorsorgePlus, BVG-Beiträge', CHF 3'450.00. Nur die Kontonummer.", "expected": "5700", "check": "exact"},
+    {"id": "b1-080", "input": "Kontoauszug 05.03.2026 – 'Unfallversicherung SichernWir, UVG-Prämie', CHF 920.00. Welches KMU-Konto? Antworte nur mit der Nummer.", "expected": "5700", "check": "exact"}
+  ]
+}

@@ -183,3 +183,38 @@ def test_load_pack_invalid_json_gives_a_clear_error(tmp_path):
     path.write_text("{not json")
     with pytest.raises(ValueError, match="pack file is not valid JSON"):
         load_pack(path)
+
+
+# ---------------------------------------------------------------- B1 bookkeeping pack (B-05)
+
+B1_PACK_PATH = ROOT / "packs" / "b1_bookkeeping.json"
+
+
+@pytest.fixture(scope="module")
+def b1_pack():
+    return load_pack(B1_PACK_PATH)
+
+
+def test_b1_pack_loads_and_validates(b1_pack):
+    assert isinstance(b1_pack, TaskPack)
+    assert b1_pack.pack_id == "b1"
+
+
+def test_b1_pack_task_count_is_within_range(b1_pack):
+    assert 60 <= len(b1_pack.tasks) <= 100
+
+
+def test_b1_pack_all_checks_are_exact(b1_pack):
+    assert all(t.check == "exact" for t in b1_pack.tasks)
+
+
+def test_b1_pack_expected_values_are_plausible_account_numbers(b1_pack):
+    for t in b1_pack.tasks:
+        assert isinstance(t.expected, str), f"{t.task_id}: expected must be a string"
+        # KMU-Kontenrahmen accounts are four-digit numbers like 6500, 6200, 4400.
+        assert t.expected.isdigit() and len(t.expected) == 4, f"{t.task_id}: {t.expected!r}"
+
+
+def test_b1_pack_task_ids_are_unique(b1_pack):
+    ids = [t.task_id for t in b1_pack.tasks]
+    assert len(ids) == len(set(ids))
