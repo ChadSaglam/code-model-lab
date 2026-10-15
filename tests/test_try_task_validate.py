@@ -62,6 +62,11 @@ def test_the_description_whitespace_is_collapsed():
     assert result["descriptions"] == ["triple the input", "triple the input"]
 
 
+def test_tabs_in_the_code_become_four_spaces_and_still_validate():
+    result = validate(code="def triple(x):\n\treturn x * 3\n")["task"]
+    assert result["body"] == "\n    return x * 3\n"
+
+
 # ---------------------------------------------------------------- the description bounds
 
 def test_a_description_under_five_characters_is_rejected():
@@ -72,6 +77,11 @@ def test_a_description_under_five_characters_is_rejected():
 def test_a_description_over_ninety_characters_is_rejected():
     with pytest.raises(ValueError, match="one sentence"):
         validate(description="d" * 91)
+
+
+def test_a_description_that_is_only_whitespace_is_rejected():
+    with pytest.raises(ValueError, match="one sentence"):
+        validate(description="     ")
 
 
 def test_a_description_of_exactly_five_characters_is_accepted():
@@ -108,6 +118,12 @@ def test_a_single_character_name_is_rejected():
         validate(code="def t(x):\n    return x * 3\n")
 
 
+def test_a_name_starting_with_an_underscore_is_rejected():
+    # It parses fine, so it reaches the name rule, which demands a lowercase-letter first character.
+    with pytest.raises(ValueError, match="lowercase"):
+        validate(code="def _triple(x):\n    return x * 3\n")
+
+
 def test_a_name_over_thirty_one_characters_is_rejected():
     name = "t" + "a" * 31  # 32 characters
     with pytest.raises(ValueError, match="lowercase"):
@@ -142,6 +158,12 @@ def test_a_keyword_only_argument_is_rejected():
 def test_a_body_that_does_not_end_in_a_return_is_rejected():
     with pytest.raises(ValueError, match="final  return"):
         validate(code="def triple(x):\n    y = x * 3\n")
+
+
+def test_a_last_line_return_nested_deeper_than_four_spaces_is_rejected():
+    # The final return must sit at the function's own indent; a return only inside a block is refused.
+    with pytest.raises(ValueError, match="final  return"):
+        validate(code="def triple(x):\n    if x > 0:\n        return x * 3\n")
 
 
 # ---------------------------------------------------------------- the tests and the self-check
