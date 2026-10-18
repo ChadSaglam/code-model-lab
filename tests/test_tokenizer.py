@@ -14,6 +14,16 @@ from glm53_flash import ByteTokenizer
 tokenizer = ByteTokenizer()
 
 
+# ---------------------------------------------------------------- the id layout
+
+def test_the_reserved_ids_and_byte_offset_are_fixed():
+    # four control ids below the byte window, then the byte slots start at the offset.
+    assert (ByteTokenizer.pad_id, ByteTokenizer.bos_id,
+            ByteTokenizer.eos_id, ByteTokenizer.sep_id) == (0, 1, 2, 3)
+    assert ByteTokenizer.byte_offset == 4
+    assert ByteTokenizer.vocab_size == 260
+
+
 # ---------------------------------------------------------------- encode: the byte-offset mapping
 
 def test_each_byte_is_shifted_by_the_byte_offset():
@@ -131,3 +141,11 @@ def test_the_leading_bos_marker_is_not_decoded_back_into_text():
 def test_vocab_size_covers_the_specials_and_every_byte_value():
     # four special ids plus all 256 byte values; this is the model's output dimension.
     assert ByteTokenizer.vocab_size == ByteTokenizer.byte_offset + 256
+
+
+def test_every_byte_value_maps_to_a_distinct_id_inside_the_vocab():
+    # all 256 byte values get their own slot and the top one still fits the vocab.
+    ids = [ByteTokenizer.byte_offset + value for value in range(256)]
+    assert len(set(ids)) == 256
+    assert min(ids) == ByteTokenizer.byte_offset
+    assert max(ids) == ByteTokenizer.vocab_size - 1
