@@ -218,3 +218,59 @@ def test_b1_pack_expected_values_are_plausible_account_numbers(b1_pack):
 def test_b1_pack_task_ids_are_unique(b1_pack):
     ids = [t.task_id for t in b1_pack.tasks]
     assert len(ids) == len(set(ids))
+
+
+# ---------------------------------------------------------------- B2 invoice pack (B-06)
+
+B2_PACK_PATH = ROOT / "packs" / "b2_invoices.json"
+
+# Convention fixed by the pack: `total` is the gross amount incl. VAT, so the VAT
+# contained in it is total * rate / (100 + rate), rounded to the Rappen.
+B2_VAT_RATES = {8.1, 2.6}
+B2_FIELDS = {"date", "total", "vat_rate", "vat_amount"}
+
+
+@pytest.fixture(scope="module")
+def b2_pack():
+    return load_pack(B2_PACK_PATH)
+
+
+def test_b2_pack_loads_and_validates(b2_pack):
+    assert isinstance(b2_pack, TaskPack)
+    assert b2_pack.pack_id == "b2"
+
+
+def test_b2_pack_task_count_is_within_range(b2_pack):
+    assert 30 <= len(b2_pack.tasks) <= 50
+
+
+def test_b2_pack_all_checks_are_json(b2_pack):
+    assert all(t.check == "json" for t in b2_pack.tasks)
+
+
+def test_b2_pack_expected_is_a_dict_with_the_four_fields(b2_pack):
+    for t in b2_pack.tasks:
+        assert isinstance(t.expected, dict), f"{t.task_id}: expected must be a dict"
+        assert set(t.expected) == B2_FIELDS, f"{t.task_id}: {sorted(t.expected)}"
+        assert isinstance(t.expected["date"], str) and t.expected["date"].strip(), t.task_id
+        assert isinstance(t.expected["total"], (int, float)) and t.expected["total"] > 0, t.task_id
+
+
+def test_b2_pack_vat_rate_is_a_current_swiss_rate(b2_pack):
+    for t in b2_pack.tasks:
+        assert t.expected["vat_rate"] in B2_VAT_RATES, f"{t.task_id}: {t.expected['vat_rate']!r}"
+
+
+def test_b2_pack_vat_amount_matches_total_and_rate(b2_pack):
+    for t in b2_pack.tasks:
+        total = t.expected["total"]
+        rate = t.expected["vat_rate"]
+        expected_vat = round(total * rate / (100 + rate), 2)
+        assert abs(t.expected["vat_amount"] - expected_vat) <= 0.01, (
+            f"{t.task_id}: vat_amount {t.expected['vat_amount']} != {expected_vat}"
+        )
+
+
+def test_b2_pack_task_ids_are_unique(b2_pack):
+    ids = [t.task_id for t in b2_pack.tasks]
+    assert len(ids) == len(set(ids))
