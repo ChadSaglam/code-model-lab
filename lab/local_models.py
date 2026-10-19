@@ -203,3 +203,50 @@ def answer_text_task(model: str, task, *, timeout: float = 300) -> dict:
     reply = generate(model, build_text_prompt(task), timeout=timeout)
     return {**check_text(task, reply["text"]), "raw": reply["text"], "read": reply["read"],
             "written": reply["written"], "seconds": reply["seconds"]}
+
+
+def summarize_pack(pack, episodes: list[dict]) -> dict:
+    """Roll one pack's episodes up into the leaderboard row: score, per-field accuracy, tokens and speed.
+
+    Token counts and durations come straight from generate(); when Ollama omits eval_count they are 0,
+    so tokens_per_second falls back to 0.0 instead of dividing by zero.
+    """
+    total = len(episodes)
+    solved = sum(episode["passed"] for episode in episodes)
+    written = sum(episode["written"] for episode in episodes)
+    seconds = sum(episode["seconds"] for episode in episodes)
+    field_hits: dict[str, list[int]] = {}
+    for episode in episodes:
+        for field, ok in episode.get("fields", {}).items():
+            counts = field_hits.setdefault(field, [0, 0])
+            counts[0] += int(ok)
+            counts[1] += 1
+    return {"pack_id": pack.pack_id, "pack_name": pack.name,
+            "tasks_solved": solved, "tasks_total": total,
+            "score": round(solved / total, 3) if total else 0.0,
+            "read": sum(episode["read"] for episode in episodes), "written": written,
+            "seconds": round(seconds, 1),
+            "tokens_per_second": round(written / seconds, 1) if seconds > 0 else 0.0,
+            "field_accuracy": {field: round(hit / seen, 3) for field, (hit, seen) in sorted(field_hits.items())}}
+
+
+def run_pack(model: str, pack, *, timeout: float = 300, on_task=None) -> dict:
+    """Run every task of a pack against one model, scoring each answer and tracking per-field hits for json checks.
+
+    Returns {"summary": <leaderboard row>, "episodes": [...]}; `on_task`, if given, is called with a small
+    progress line per task (the same shape ollama_eval.py prints for live progress).
+    """
+    import text_tasks
+    episodes = []
+    for task in pack.tasks:
+        reply = generate(model, build_text_prompt(task), timeout=timeout)
+        result = check_text(task, reply["text"])
+        fields = text_tasks.json_field_hits(task.expected, reply["text"]) if task.check == "json" else {}
+        episodes.append({"task": task.task_id, "check": task.check, "prompt": task.prompt,
+                         "raw": reply["text"], "passed": result["passed"], "status": result["status"],
+                         "fields": fields, "read": reply["read"], "written": reply["written"],
+                         "seconds": reply["seconds"]})
+        if on_task:
+            on_task({"task": task.task_id, "passed": result["passed"], "read": reply["read"],
+                     "written": reply["written"]})
+    return {"summary": summarize_pack(pack, episodes), "episodes": episodes}

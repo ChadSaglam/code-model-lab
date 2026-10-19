@@ -138,6 +138,20 @@ def test_models_page_is_served(server):
     assert response.status == 200 and b'id="tab-models"' in response.read()
 
 
+def test_models_tab_renders_per_pack_leaderboard_rows():
+    # Acceptance line's last clause (B-07): the Models tab renders the per-pack rows. There is no
+    # browser here (CONTRIBUTING.md), and do_GET serves lab.PAGE verbatim for /models, so the served tab is
+    # exactly this file: it must wire a Task packs board and label each row by its pack with per-field
+    # accuracy under the score. (Reads the page, binds no port, so it runs where the server tests cannot.)
+    page = lab.PAGE.read_text()
+    # a Task packs board to switch to, next to the course and level boards
+    assert 'data-set="pack"' in page and "Task packs" in page
+    # a pack row is labelled by its pack (pack_name), not by a difficulty level
+    assert 'r.set === "pack"' in page and "pack_name" in page
+    # the per-field accuracy (date/total/vat_rate/vat_amount) is shown beneath the score
+    assert "field_accuracy" in page
+
+
 def test_task_lab_run_needs_levels(server):
     status, data = request(server, "POST", "/api/experiments", {"name": "x", "kind": "ladder", "task_levels": []})
     assert status == 400 and "level" in data["error"]
@@ -150,6 +164,7 @@ import subprocess  # noqa: E402
 local_models = load("local_models")
 text_tasks = load("text_tasks")
 task_packs = load("task_packs")
+ollama_eval = load("ollama_eval")
 
 FIXTURES = ROOT / "tests" / "fixtures"
 
@@ -402,6 +417,78 @@ def test_load_pack_rejects_invalid_json(tmp_path):
         task_packs.load_pack(bad)
 
 
+# ---------------------------------------------------------------- per-pack runs (B-07)
+
+# The fake Ollama parrots a prompt's last line, so each task's last line is the answer it will "give".
+B1_PACK = {"id": "b1", "name": "Bookkeeping B1", "tasks": [
+    {"id": "t1", "input": "Konto?\n6500", "expected": "6500", "check": "exact"},
+    {"id": "t2", "input": "Konto?\n6000", "expected": "6500", "check": "exact"}]}
+B2_PACK = {"id": "b2", "name": "Invoices B2", "tasks": [
+    {"id": "j1", "input": 'Beleg?\n{"date": "2026-01-05", "total": 108.1, "vat_rate": 8.1, "vat_amount": 8.1}',
+     "expected": {"date": "2026-01-05", "total": 108.1, "vat_rate": 8.1, "vat_amount": 8.1}, "check": "json"},
+    {"id": "j2", "input": 'Beleg?\n{"date": "2026-02-09", "total": 200.0, "vat_rate": 8.1, "vat_amount": 5.2}',
+     "expected": {"date": "2026-02-09", "total": 200.0, "vat_rate": 2.6, "vat_amount": 5.2}, "check": "json"}]}
+
+
+def test_json_field_hits_reports_each_field_and_survives_malformed():
+    expected = {"date": "2026-01-05", "total": 108.1, "vat_rate": 8.1}
+    assert text_tasks.json_field_hits(expected, '{"date": "2026-01-05", "total": 108.1, "vat_rate": 8.1}') \
+        == {"date": True, "total": True, "vat_rate": True}
+    assert text_tasks.json_field_hits(expected, '{"date": "2026-01-05", "total": 99.0, "vat_rate": 8.1}') \
+        == {"date": True, "total": False, "vat_rate": True}
+    assert text_tasks.json_field_hits(expected, "not json") == {"date": False, "total": False, "vat_rate": False}
+    assert text_tasks.json_field_hits(expected, "[1, 2, 3]") == {"date": False, "total": False, "vat_rate": False}
+
+
+def test_run_pack_scores_an_exact_pack_with_tokens_and_speed(fake_ollama, monkeypatch):
+    monkeypatch.setattr(local_models, "OLLAMA", fake_ollama)
+    out = local_models.run_pack("fake:latest", task_packs.validate_pack(B1_PACK))
+    s = out["summary"]
+    assert s["pack_id"] == "b1" and s["pack_name"] == "Bookkeeping B1"
+    assert s["tasks_total"] == 2 and s["tasks_solved"] == 1 and s["score"] == 0.5
+    assert s["field_accuracy"] == {}  # an exact pack has no per-field breakdown
+    assert s["read"] == 2 * 40 and s["written"] == 2 * 12
+    assert s["tokens_per_second"] == (round(s["written"] / s["seconds"], 1) if s["seconds"] > 0 else 0.0)
+    assert [e["passed"] for e in out["episodes"]] == [True, False]
+
+
+def test_run_pack_reports_per_field_accuracy_for_a_json_pack(fake_ollama, monkeypatch):
+    monkeypatch.setattr(local_models, "OLLAMA", fake_ollama)
+    s = local_models.run_pack("fake:latest", task_packs.validate_pack(B2_PACK))["summary"]
+    assert s["tasks_solved"] == 1 and s["score"] == 0.5  # j2 misses only vat_rate, so the task fails
+    assert s["field_accuracy"] == {"date": 1.0, "total": 1.0, "vat_amount": 1.0, "vat_rate": 0.5}
+    assert s["read"] == 2 * 40 and s["written"] == 2 * 12
+
+
+def test_generate_falls_back_when_ollama_omits_token_counts(monkeypatch):
+    # Ollama's eval_count/prompt_eval_count can be absent; generate must still return zeroed, numeric fields.
+    monkeypatch.setattr(local_models, "_post", lambda path, payload, timeout: {"response": "ja"})
+    reply = local_models.generate("fake:latest", "Antworte.\nja")
+    assert reply["text"] == "ja" and reply["read"] == 0 and reply["written"] == 0
+    assert isinstance(reply["seconds"], float)
+
+
+def test_run_pack_survives_zero_duration(monkeypatch):
+    monkeypatch.setattr(local_models, "generate",
+                        lambda model, prompt, **kw: {"text": "6500", "read": 0, "written": 0, "seconds": 0.0})
+    s = local_models.run_pack("fake:latest", task_packs.validate_pack(B1_PACK))["summary"]
+    assert s["tokens_per_second"] == 0.0 and s["written"] == 0 and s["seconds"] == 0.0
+
+
+def test_ollama_eval_pack_writes_a_result_file(tmp_path, monkeypatch):
+    # The subprocess entry point the queue launches: run a pack and persist it like a course/levels run.
+    monkeypatch.setattr(local_models, "generate", lambda model, prompt, **kw:
+                        {"text": prompt.strip().splitlines()[-1], "read": 40, "written": 12, "seconds": 0.1})
+    pack_file = tmp_path / "b1.json"
+    pack_file.write_text(json.dumps(B1_PACK))
+    output = tmp_path / "result.json"
+    assert ollama_eval.run_pack("fake:latest", str(pack_file), output) == 0
+    payload = json.loads(output.read_text())
+    assert payload["set"] == "pack" and payload["pack_id"] == "b1"
+    assert payload["summary"]["tasks_solved"] == 1 and payload["summary"]["written"] == 2 * 12
+    assert len(payload["episodes"]) == 2
+
+
 # ---------------------------------------------------------------- Models page
 
 @pytest.fixture()
@@ -447,3 +534,50 @@ def test_several_models_are_tested_one_after_another(models_server):
         time.sleep(0.3)
     assert sorted(run["model"] for run in data["runs"]) == ["fake:latest", "other:latest"]
     assert all(run["summary"]["tasks_solved"] == 8 for run in data["runs"])
+
+
+def test_local_runs_serves_per_pack_leaderboard_rows(models_server, tmp_path, monkeypatch):
+    import time
+    packs = tmp_path / "packs"
+    packs.mkdir()
+    (packs / "b1.json").write_text(json.dumps(B1_PACK))
+    (packs / "b2.json").write_text(json.dumps(B2_PACK))
+    monkeypatch.setattr(lab, "PACKS", packs)
+
+    def run_and_wait(pack_id):
+        status, _ = request(models_server, "POST", "/api/local-runs",
+                            {"models": ["fake:latest"], "set": "pack", "pack": pack_id})
+        assert status == 200
+        deadline = time.time() + 120
+        while time.time() < deadline:
+            _, data = request(models_server, "GET", "/api/local-runs")
+            rows = [r for r in data["runs"] if r.get("pack_id") == pack_id]
+            if rows and rows[0]["status"] == "done":
+                return rows[0]
+            time.sleep(0.3)
+        raise AssertionError(f"pack {pack_id} never finished")
+
+    b1 = run_and_wait("b1")
+    assert b1["set"] == "pack" and b1["summary"]["score"] == 0.5 and b1["summary"]["field_accuracy"] == {}
+    assert b1["summary"]["written"] == 2 * 12 and b1["summary"]["tokens_per_second"] >= 0
+
+    b2 = run_and_wait("b2")
+    assert b2["pack_name"] == "Invoices B2"
+    assert b2["summary"]["field_accuracy"] == {"date": 1.0, "total": 1.0, "vat_amount": 1.0, "vat_rate": 0.5}
+    assert b2["summary"]["read"] == 2 * 40 and "tokens_per_second" in b2["summary"]
+
+    _, data = request(models_server, "GET", "/api/local-runs")
+    assert sorted(r["pack_id"] for r in data["runs"] if r["set"] == "pack") == ["b1", "b2"]
+    assert data["reference"] is not None  # packs sit alongside the course/levels runs, nothing breaks
+
+
+def test_pack_run_rejects_unknown_and_empty_pack(models_server, tmp_path, monkeypatch):
+    packs = tmp_path / "packs"
+    packs.mkdir()
+    monkeypatch.setattr(lab, "PACKS", packs)
+    status, data = request(models_server, "POST", "/api/local-runs",
+                          {"models": ["fake:latest"], "set": "pack", "pack": "nope"})
+    assert status == 404 and "pack" in data["error"].lower()
+    status, _ = request(models_server, "POST", "/api/local-runs",
+                       {"models": ["fake:latest"], "set": "pack", "pack": ""})
+    assert status == 400

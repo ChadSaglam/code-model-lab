@@ -352,7 +352,7 @@ td.check input,th.check input{width:18px;height:18px;accent-color:var(--accent);
 <section class="models-only">
   <h2>Leaderboard</h2>
   <p class="lead">Every finished test, best first. The small model trained in this lab is listed for reference. Click a row to see which answers failed and why.</p>
-  <div class="filters" id="m-filter"><button class="ghost on" data-set="course">Course tasks</button><button class="ghost" data-set="levels">Task Lab levels</button></div>
+  <div class="filters" id="m-filter"><button class="ghost on" data-set="course">Course tasks</button><button class="ghost" data-set="levels">Task Lab levels</button><button class="ghost" data-set="pack">Task packs</button></div>
   <div class="card" style="overflow-x:auto"><table id="lm-table"></table></div>
   <div id="lm-detail"></div>
 </section>
@@ -1167,6 +1167,11 @@ async function loadLocalModels(){
   const base = $("#v-base").value;
   $("#v-base").innerHTML = (localInfo.details || []).filter(m => !m.variant).map(m => `<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("");
   if(localInfo.models.includes(base)) $("#v-base").value = base;
+  const setSel = $("#m-set"), chosenSet = setSel.value;
+  setSel.querySelector("optgroup")?.remove();
+  const packOpts = (localInfo.packs || []).map(p => `<option value="pack:${esc(p.id)}">${esc(p.name)} (${p.tasks} tasks)</option>`).join("");
+  if(packOpts) setSel.insertAdjacentHTML("beforeend", `<optgroup label="Task packs">${packOpts}</optgroup>`);
+  if([...setSel.options].some(o => o.value === chosenSet)) setSel.value = chosenSet;
   $("#m-status").textContent = localInfo.available
     ? `${localInfo.models.length} model${localInfo.models.length === 1 ? "" : "s"} found in Ollama. Each task gets one deterministic answer (temperature 0, thinking off).`
     : `${localInfo.error} (looked at ${localInfo.host}).`;
@@ -1262,8 +1267,10 @@ function suggestVariantName(){
 
 async function startModelTests(models){
   $("#m-error").textContent = "";
-  const body = {models, set:$("#m-set").value};
+  const value = $("#m-set").value;
+  const body = {models, set:value.startsWith("pack:") ? "pack" : value};
   if(body.set === "levels") body.levels = chosenModelLevels();
+  if(body.set === "pack") body.pack = value.slice(5);
   boardSet = body.set;
   for(const b of document.querySelectorAll("#m-filter button")) b.classList.toggle("on", b.dataset.set === boardSet);
   try{ await api("/api/local-runs", body); await tick(true); return true; }
@@ -1281,8 +1288,10 @@ async function createVariant(thenTest){
     $("#v-ok").textContent = `${made.model} is ready.`;
     if(thenTest){
       // answers are deterministic, so a finished test of the original on the same set is reused instead of repeated
-      const set = $("#m-set").value, levels = set === "levels" ? chosenModelLevels().join(",") : "";
-      const tested = localData.runs.some(r => r.model === base && r.set === set && r.summary && (r.levels || []).join(",") === levels);
+      const value = $("#m-set").value, set = value.startsWith("pack:") ? "pack" : value;
+      const levels = set === "levels" ? chosenModelLevels().join(",") : "", packId = set === "pack" ? value.slice(5) : "";
+      const tested = localData.runs.some(r => r.model === base && r.set === set && r.summary
+        && (r.levels || []).join(",") === levels && (r.pack_id || "") === packId);
       const models = tested ? [made.model] : [base, made.model];
       picked.clear(); models.forEach(m => picked.add(m)); renderInstalled();
       if(await startModelTests(models)) $("#v-ok").textContent = tested
@@ -1302,7 +1311,7 @@ async function refreshLocalRuns(){
 
 function referenceRows(){
   const ref = localData.reference || {};
-  const rows = boardSet === "course" ? (ref.course ? [ref.course] : []) : ref.levels || [];
+  const rows = boardSet === "course" ? (ref.course ? [ref.course] : []) : boardSet === "levels" ? ref.levels || [] : [];
   return rows.map(r => `<tr class="ref"><td></td><td><i>Small model · ${esc(r.name)}</i></td><td>${boardSet === "course" ? "24 course tasks" : esc(levelText(r.levels || [1]))}</td>
     <td class="num">${r.solved} / ${r.total}${r.by_level ? `<br><span class="note">${Object.entries(r.by_level).map(([lv, [ok, n]]) => `L${lv} ${ok}/${n}`).join(" · ")}</span>` : ""}</td>
     <td class="num">${percent(r.solved, r.total)}%</td><td class="num" colspan="4">25.7M parameters, trained in this lab</td><td></td></tr>`).join("");
@@ -1312,21 +1321,26 @@ function renderLocalRuns(){
   if(MODE !== "models") return;
   const runs = localData.runs.filter(r => r.set === boardSet);
   const done = runs.filter(r => r.summary).sort((a, b) =>
-    percent(b.summary.tasks_solved, b.summary.tasks_total) - percent(a.summary.tasks_solved, a.summary.tasks_total)
+    (boardSet === "pack" ? (a.pack_id || "").localeCompare(b.pack_id || "") : 0)
+    || percent(b.summary.tasks_solved, b.summary.tasks_total) - percent(a.summary.tasks_solved, a.summary.tasks_total)
     || b.summary.tokens_per_second - a.summary.tokens_per_second);
   const open = runs.filter(r => !r.summary);
   const variants = Object.fromEntries((localInfo?.details || []).filter(m => m.variant).map(m => [m.name, m.variant.base]));
-  const queued = boardSet === $("#m-set").value ? localData.queued.map(m => `<tr><td></td><td>${esc(m)}</td><td colspan="7" class="note">waiting, starts after the running test</td><td>queued</td></tr>`).join("") : "";
+  const chosenSet = $("#m-set").value.startsWith("pack:") ? "pack" : $("#m-set").value;
+  const queued = boardSet === chosenSet ? localData.queued.map(m => `<tr><td></td><td>${esc(m)}</td><td colspan="7" class="note">waiting, starts after the running test</td><td>queued</td></tr>`).join("") : "";
   const row = (r, rank) => {
     const s = r.summary;
-    const set = r.set === "course" ? "24 course tasks" : esc(levelText(r.levels || []));
+    const set = r.set === "pack" ? esc(r.pack_name || r.pack_id || "pack")
+      : r.set === "course" ? "24 course tasks" : esc(levelText(r.levels || []));
     const perLevel = r.set === "levels" && Object.keys(r.by_level).length
       ? `<br><span class="note">${Object.entries(r.by_level).map(([lv, [ok, n]]) => `L${lv} ${ok}/${n}`).join(" · ")}</span>` : "";
+    const fields = r.set === "pack" && s && s.field_accuracy && Object.keys(s.field_accuracy).length
+      ? `<br><span class="note">${Object.entries(s.field_accuracy).map(([f, acc]) => `${esc(f)} ${Math.round(acc * 100)}%`).join(" · ")}</span>` : "";
     const status = r.status === "running" ? `running ${r.progress} / ${r.total}` : r.status === "failed" ? "error (see Live log)" : r.status;
     const origin = variants[r.model] ? `<span class="vtag">from ${esc(variants[r.model])}</span>` : "";
     return `<tr class="pick ${localDetail === r.id ? "sel" : ""}" data-run="${esc(r.id)}">
       <td class="rank">${rank || ""}</td><td>${esc(r.model)}${origin}</td><td>${set}</td>
-      <td class="num">${s ? `${s.tasks_solved} / ${s.tasks_total}` : "—"}${perLevel}</td><td class="num">${s ? `${percent(s.tasks_solved, s.tasks_total)}%` : "—"}</td>
+      <td class="num">${s ? `${s.tasks_solved} / ${s.tasks_total}` : "—"}${perLevel}</td><td class="num">${s ? `${percent(s.tasks_solved, s.tasks_total)}%` : "—"}${fields}</td>
       <td class="num">${s ? tokens(s.read) : "—"}</td><td class="num">${s ? tokens(s.written) : "—"}</td>
       <td class="num">${s ? shortDuration(s.seconds) : "—"}</td><td class="num">${s ? `${s.tokens_per_second} tok/s` : "—"}</td>
       <td>${status} <button class="ghost small" data-archive-run="${esc(r.id)}">Archive</button></td></tr>`;
@@ -1365,7 +1379,11 @@ function renderLocalDetail(){
   const shown = showAllFailures ? wrong : wrong.slice(0, FAILURES_SHOWN);
   const more = wrong.length > shown.length ? `<div class="actions"><button class="ghost" id="lm-more">Show all ${wrong.length} failed answers</button></div>` : "";
   $("#lm-detail").innerHTML = `<div class="card" style="margin-top:16px"><div class="label">${esc(result.model || "")} · answers that failed (${wrong.length} of ${(result.episodes || []).length})</div>`
-    + (shown.map(e => `<div class="ep" style="grid-template-columns:minmax(200px,1fr) 2fr">
+    + (shown.map(e => e.code === undefined
+        ? `<div class="ep" style="grid-template-columns:minmax(200px,1fr) 2fr">
+        <div class="q"><div class="label">${esc(e.check || "text")} check${e.fields && Object.keys(e.fields).length ? ` · ${Object.entries(e.fields).map(([f, ok]) => `${esc(f)} ${ok ? "✓" : "✗"}`).join(" · ")}` : ""}</div>${esc(describe(e.prompt))}<br><code>${esc(e.task)}</code></div>
+        <div class="res"><pre>${esc(e.raw)}</pre><span class="${e.passed ? "pass" : "fail"}">${e.passed ? "✓ Passed" : "✗ Failed"}</span><span class="note">${tokens(e.read)} read · ${tokens(e.written)} written · ${e.seconds} s</span></div></div>`
+        : `<div class="ep" style="grid-template-columns:minmax(200px,1fr) 2fr">
         <div class="q"><div class="label">${esc(familyName(e.family))} · level ${e.level}</div>${esc(describe(e.prompt))}<br><code>${esc(e.task)}</code></div>
         <div class="res"><pre>${esc(e.code)}</pre>${verdict(e)}<span class="note">${tokens(e.read)} read · ${tokens(e.written)} written · ${e.seconds} s</span></div></div>`).join("")
       || `<p class="note">${result.episodes ? "Every answer passed." : "No answers yet."}</p>`) + more + `</div>`;

@@ -34,11 +34,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ladder  # noqa: E402  (lab/ladder.py: Task Lab difficulty levels)
 import local_models  # noqa: E402  (lab/local_models.py: Ollama client and safe test runs)
+import task_packs  # noqa: E402  (lab/task_packs.py: bookkeeping/invoice task packs)
 
 HOST, PORT = "127.0.0.1", 8765
 ALLOWED_HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
 PAGE = Path(__file__).resolve().parent / "index.html"
 RUNS = ROOT / "runs"
+PACKS = ROOT / "packs"
 EXPERIMENTS = RUNS / "experiments"
 ARCHIVE = RUNS / "_archive"
 EXTERNAL_RUN_GRACE_SECONDS = 180  # a run started in Terminal counts as "still active" this long after its last write
@@ -744,10 +746,11 @@ def local_runs() -> list[dict]:
         else:
             status, progress = "stopped", 0
         by_level: dict[int, list[int]] = {}
-        for episode in (result or {}).get("episodes", []):
-            counts = by_level.setdefault(episode.get("level", 1), [0, 0])
-            counts[0] += int(episode["passed"])
-            counts[1] += 1
+        if record.get("set") != "pack":
+            for episode in (result or {}).get("episodes", []):
+                counts = by_level.setdefault(episode.get("level", 1), [0, 0])
+                counts[0] += int(episode["passed"])
+                counts[1] += 1
         rows.append({**record, "status": status, "progress": progress, "summary": (result or {}).get("summary"),
                      "by_level": {str(level): counts for level, counts in sorted(by_level.items())},
                      "error": JOB.errors.get((owner, "test"))})
@@ -762,30 +765,53 @@ def lab_variants() -> dict:
     return data if isinstance(data, dict) else {}
 
 
+def available_packs() -> list[dict]:
+    """The task packs in packs/ that load and validate, ordered by file name (b1, b2, …)."""
+    packs = []
+    for file in sorted(PACKS.glob("*.json")):
+        try:
+            pack = task_packs.load_pack(file)
+        except ValueError:
+            continue  # a malformed pack is simply not offered, never crashes the Models page
+        packs.append({"id": pack.pack_id, "name": pack.name, "tasks": len(pack.tasks)})
+    return packs
+
+
 def local_models_info() -> dict:
     variants = lab_variants()
     try:
         models = local_models.model_details()
     except local_models.ModelError as error:
-        return {"available": False, "models": [], "details": [], "error": str(error), "host": local_models.OLLAMA}
+        return {"available": False, "models": [], "details": [], "packs": available_packs(),
+                "error": str(error), "host": local_models.OLLAMA}
     for model in models:
         model["variant"] = variants.get(model["name"])
-    return {"available": True, "models": [m["name"] for m in models], "details": models, "host": local_models.OLLAMA}
+    return {"available": True, "models": [m["name"] for m in models], "details": models,
+            "packs": available_packs(), "host": local_models.OLLAMA}
 
 
 def launch_local_run(request: dict) -> dict:
     """Start one local-model test now (the caller holds CONTROL_LOCK and nothing is running)."""
-    model, test, levels = request["model"], request["set"], request["levels"]
+    model, test = request["model"], request["set"]
     run_id = f"{re.sub(r'[^a-z0-9]+', '-', model.lower()).strip('-')}-{time.strftime('%Y%m%d-%H%M%S')}"
     folder = LOCAL / run_id
     folder.mkdir(parents=True, exist_ok=True)
-    total = 24 if test == "course" else ladder.lengths(levels)["families"] * 4
-    record = {"id": run_id, "model": model, "set": test, "levels": levels, "total": total,
-              "created": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    output = str(folder / "result.json")
+    if test == "pack":
+        record = {"id": run_id, "model": model, "set": "pack", "pack_id": request["pack_id"],
+                  "pack_name": request["pack_name"], "total": request["total"],
+                  "created": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        args = ["lab/ollama_eval.py", "--model", model, "--set", "pack", "--pack", request["pack_path"],
+                "--output", output]
+    else:
+        levels = request["levels"]
+        total = 24 if test == "course" else ladder.lengths(levels)["families"] * 4
+        record = {"id": run_id, "model": model, "set": test, "levels": levels, "total": total,
+                  "created": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        args = ["lab/ollama_eval.py", "--model", model, "--set", test, "--output", output]
+        if levels:
+            args += ["--levels", ",".join(map(str, levels))]
     (folder / "run.json").write_text(json.dumps(record, indent=2) + "\n")
-    args = ["lab/ollama_eval.py", "--model", model, "--set", test, "--output", str(folder / "result.json")]
-    if levels:
-        args += ["--levels", ",".join(map(str, levels))]
     JOB.run_command(f"local:{run_id}", "test", args, folder / "_logs")
     return record
 
@@ -795,11 +821,21 @@ def start_local_run(data: dict) -> dict:
     test = data.get("set")
     models = data.get("models") or ([data["model"]] if data.get("model") else [])
     models = list(dict.fromkeys(models)) if isinstance(models, list) else []
-    if test not in ("course", "levels"):
+    if test not in ("course", "levels", "pack"):
         raise LabError("Pick a test set.", 400)
     available = local_models_info()["models"]
     if not models or not all(isinstance(m, str) and m in available for m in models):
         raise LabError("Pick at least one model that is installed in Ollama.", 400)
+    pack = pack_path = None
+    if test == "pack":
+        pack_id = re.sub(r"[^a-z0-9-]", "", str(data.get("pack", "")))  # same sanitising as /api/local-run
+        if not pack_id:
+            raise LabError("Pick a task pack.", 400)
+        pack_path = PACKS / f"{pack_id}.json"
+        try:
+            pack = task_packs.load_pack(pack_path)
+        except ValueError:
+            raise LabError("That task pack could not be found.", 404) from None
     levels = clean_levels(data.get("levels")) if test == "levels" else None
     if test == "levels" and not levels:
         raise LabError("Pick at least one difficulty level.", 400)
@@ -807,7 +843,11 @@ def start_local_run(data: dict) -> dict:
         if JOB.running():
             raise LabError("Something is already running. Wait for it to finish first.")
         JOB.queue = []
-        requests = [{"model": m, "set": test, "levels": levels} for m in models]
+        if test == "pack":
+            requests = [{"model": m, "set": "pack", "pack_id": pack.pack_id, "pack_name": pack.name,
+                         "pack_path": str(pack_path), "total": len(pack.tasks)} for m in models]
+        else:
+            requests = [{"model": m, "set": test, "levels": levels} for m in models]
         JOB.local_queue = requests[1:]
         return launch_local_run(requests[0])
 

@@ -52,6 +52,20 @@ def json_fields_match(expected: dict, answer: str) -> bool:
     return all(field in parsed and parsed[field] == value for field, value in expected.items())
 
 
+def json_field_hits(expected: dict, answer: str) -> dict[str, bool]:
+    """Per-field correctness for a json check: each expected field mapped to whether the answer got it right.
+
+    A malformed answer (not JSON, or JSON that is not an object) scores every field wrong, never raises.
+    """
+    try:
+        parsed = json.loads(answer)
+    except (json.JSONDecodeError, TypeError):
+        parsed = None
+    if not isinstance(parsed, dict):
+        parsed = {}
+    return {field: field in parsed and parsed[field] == value for field, value in expected.items()}
+
+
 def numeric_match(expected: float, answer: str, tolerance: float) -> bool:
     try:
         value = float(str(answer).strip())

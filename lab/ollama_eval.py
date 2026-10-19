@@ -40,13 +40,31 @@ def summarize(episodes: list[dict], seconds: float) -> dict:
             "tokens_per_second": round(written / max(1e-9, sum(e["seconds"] for e in episodes)), 1)}
 
 
+def run_pack(model: str, pack_path: str | None, output: Path) -> int:
+    """Run a task pack (B-04) against a model and write a per-pack result file for the Models leaderboard."""
+    import task_packs
+    if not pack_path:
+        raise SystemExit("--pack is required for a pack run")
+    pack = task_packs.load_pack(pack_path)
+    result = local_models.run_pack(model, pack, on_task=lambda line: print(json.dumps(line), flush=True))
+    payload = {"schema_version": "1.0", "status": "complete", "model": model, "set": "pack",
+               "pack_id": pack.pack_id, "summary": result["summary"], "episodes": result["episodes"]}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2) + "\n")
+    print(json.dumps(payload["summary"]), flush=True)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True)
-    parser.add_argument("--set", choices=("course", "levels"), required=True)
+    parser.add_argument("--set", choices=("course", "levels", "pack"), required=True)
     parser.add_argument("--levels", default="1,2,3,4")
+    parser.add_argument("--pack")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.set == "pack":
+        return run_pack(args.model, args.pack, args.output)
     levels = ladder.parse_levels(args.levels) if args.set == "levels" else [1]
     level_of = ladder.family_levels()
     tasks = test_set(args.set, levels)
