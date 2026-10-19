@@ -793,7 +793,10 @@ def local_models_info() -> dict:
 def launch_local_run(request: dict) -> dict:
     """Start one local-model test now (the caller holds CONTROL_LOCK and nothing is running)."""
     model, test = request["model"], request["set"]
-    run_id = f"{re.sub(r'[^a-z0-9]+', '-', model.lower()).strip('-')}-{time.strftime('%Y%m%d-%H%M%S')}"
+    base = f"{re.sub(r'[^a-z0-9]+', '-', model.lower()).strip('-')}-{time.strftime('%Y%m%d-%H%M%S')}"
+    run_id, suffix = base, 2
+    while (LOCAL / run_id).exists():  # two runs of one model in the same second keep separate folders
+        run_id, suffix = f"{base}-{suffix}", suffix + 1
     folder = LOCAL / run_id
     folder.mkdir(parents=True, exist_ok=True)
     output = str(folder / "result.json")
