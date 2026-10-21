@@ -227,6 +227,19 @@ def clean_settings(raw: dict) -> dict:
     return settings
 
 
+def clean_threshold(raw) -> float | None:
+    """A pack run's optional release-gate threshold (percent, 0–100). Absent when not given; never defaulted."""
+    if raw in (None, ""):
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        raise LabError("'threshold' must be a number.", 400) from None
+    if not 0 <= value <= 100:
+        raise LabError("'threshold' must be between 0 and 100.", 400)
+    return value
+
+
 def clean_levels(raw) -> list[int] | None:
     if raw in (None, [], ""):
         return None
@@ -806,6 +819,8 @@ def launch_local_run(request: dict) -> dict:
                   "created": time.strftime("%Y-%m-%dT%H:%M:%S")}
         args = ["lab/ollama_eval.py", "--model", model, "--set", "pack", "--pack", request["pack_path"],
                 "--output", output]
+        if request.get("threshold") is not None:
+            args += ["--threshold", str(request["threshold"])]
     else:
         levels = request["levels"]
         total = 24 if test == "course" else ladder.lengths(levels)["families"] * 4
@@ -829,8 +844,9 @@ def start_local_run(data: dict) -> dict:
     available = local_models_info()["models"]
     if not models or not all(isinstance(m, str) and m in available for m in models):
         raise LabError("Pick at least one model that is installed in Ollama.", 400)
-    pack = pack_path = None
+    pack = pack_path = threshold = None
     if test == "pack":
+        threshold = clean_threshold(data.get("threshold"))  # optional release gate, validated before the pack loads
         pack_id = re.sub(r"[^a-z0-9-]", "", str(data.get("pack", "")))  # same sanitising as /api/local-run
         if not pack_id:
             raise LabError("Pick a task pack.", 400)
@@ -848,7 +864,7 @@ def start_local_run(data: dict) -> dict:
         JOB.queue = []
         if test == "pack":
             requests = [{"model": m, "set": "pack", "pack_id": pack.pack_id, "pack_name": pack.name,
-                         "pack_path": str(pack_path), "total": len(pack.tasks)} for m in models]
+                         "pack_path": str(pack_path), "total": len(pack.tasks), "threshold": threshold} for m in models]
         else:
             requests = [{"model": m, "set": test, "levels": levels} for m in models]
         JOB.local_queue = requests[1:]

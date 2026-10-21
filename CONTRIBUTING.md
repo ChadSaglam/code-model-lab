@@ -25,7 +25,7 @@ make dev       # start the lab at http://127.0.0.1:8765
 .venv/bin/python -m pytest -q
 ```
 
-A full pass is `347 passed, 1 xfailed`. Sixteen of those tests bind a local HTTP port; they pass on a normal
+A full pass is `375 passed, 1 xfailed`. Seventeen of those tests bind a local HTTP port; they pass on a normal
 machine but cannot run where binding a port is blocked — skip them there, do not delete them.
 
 ## Which checks a change must pass

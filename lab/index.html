@@ -1336,11 +1336,13 @@ function renderLocalRuns(){
       ? `<br><span class="note">${Object.entries(r.by_level).map(([lv, [ok, n]]) => `L${lv} ${ok}/${n}`).join(" · ")}</span>` : "";
     const fields = r.set === "pack" && s && s.field_accuracy && Object.keys(s.field_accuracy).length
       ? `<br><span class="note">${Object.entries(s.field_accuracy).map(([f, acc]) => `${esc(f)} ${Math.round(acc * 100)}%`).join(" · ")}</span>` : "";
+    const gate = r.set === "pack" && s && typeof s.threshold === "number"
+      ? `<br><span class="badge ${s.passed ? "done" : "failed"}">${s.passed ? "pass" : "fail"} · ≥ ${s.threshold}%</span>` : "";
     const status = r.status === "running" ? `running ${r.progress} / ${r.total}` : r.status === "failed" ? "error (see Live log)" : r.status;
     const origin = variants[r.model] ? `<span class="vtag">from ${esc(variants[r.model])}</span>` : "";
     return `<tr class="pick ${localDetail === r.id ? "sel" : ""}" data-run="${esc(r.id)}">
       <td class="rank">${rank || ""}</td><td>${esc(r.model)}${origin}</td><td>${set}</td>
-      <td class="num">${s ? `${s.tasks_solved} / ${s.tasks_total}` : "—"}${perLevel}</td><td class="num">${s ? `${percent(s.tasks_solved, s.tasks_total)}%` : "—"}${fields}</td>
+      <td class="num">${s ? `${s.tasks_solved} / ${s.tasks_total}` : "—"}${perLevel}</td><td class="num">${s ? `${percent(s.tasks_solved, s.tasks_total)}%` : "—"}${fields}${gate}</td>
       <td class="num">${s ? tokens(s.read) : "—"}</td><td class="num">${s ? tokens(s.written) : "—"}</td>
       <td class="num">${s ? shortDuration(s.seconds) : "—"}</td><td class="num">${s ? `${s.tokens_per_second} tok/s` : "—"}</td>
       <td>${status} <button class="ghost small" data-archive-run="${esc(r.id)}">Archive</button></td></tr>`;

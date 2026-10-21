@@ -77,7 +77,7 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q
 ```
 
-You should see `347 passed, 1 xfailed`.
+You should see `375 passed, 1 xfailed`.
 
 **4. Start the lab**
 

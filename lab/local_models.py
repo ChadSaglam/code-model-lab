@@ -205,11 +205,15 @@ def answer_text_task(model: str, task, *, timeout: float = 300) -> dict:
             "written": reply["written"], "seconds": reply["seconds"]}
 
 
-def summarize_pack(pack, episodes: list[dict]) -> dict:
+def summarize_pack(pack, episodes: list[dict], *, threshold: float | None = None) -> dict:
     """Roll one pack's episodes up into the leaderboard row: score, per-field accuracy, tokens and speed.
 
     Token counts and durations come straight from generate(); when Ollama omits eval_count they are 0,
     so tokens_per_second falls back to 0.0 instead of dividing by zero.
+
+    `threshold` is the owner's release gate (percent, 0–100). When given, the row also carries that
+    threshold and a boolean `passed` (the pack's score, as a percent, meets it). When absent, the row
+    reports neither — a pack run without a configured threshold is neither a pass nor a fail.
     """
     total = len(episodes)
     solved = sum(episode["passed"] for episode in episodes)
@@ -221,20 +225,25 @@ def summarize_pack(pack, episodes: list[dict]) -> dict:
             counts = field_hits.setdefault(field, [0, 0])
             counts[0] += int(ok)
             counts[1] += 1
-    return {"pack_id": pack.pack_id, "pack_name": pack.name,
-            "tasks_solved": solved, "tasks_total": total,
-            "score": round(solved / total, 3) if total else 0.0,
-            "read": sum(episode["read"] for episode in episodes), "written": written,
-            "seconds": round(seconds, 1),
-            "tokens_per_second": round(written / seconds, 1) if seconds > 0 else 0.0,
-            "field_accuracy": {field: round(hit / seen, 3) for field, (hit, seen) in sorted(field_hits.items())}}
+    score = round(solved / total, 3) if total else 0.0
+    summary = {"pack_id": pack.pack_id, "pack_name": pack.name,
+               "tasks_solved": solved, "tasks_total": total, "score": score,
+               "read": sum(episode["read"] for episode in episodes), "written": written,
+               "seconds": round(seconds, 1),
+               "tokens_per_second": round(written / seconds, 1) if seconds > 0 else 0.0,
+               "field_accuracy": {field: round(hit / seen, 3) for field, (hit, seen) in sorted(field_hits.items())}}
+    if threshold is not None:
+        summary["threshold"] = threshold
+        summary["passed"] = score * 100 >= threshold
+    return summary
 
 
-def run_pack(model: str, pack, *, timeout: float = 300, on_task=None) -> dict:
+def run_pack(model: str, pack, *, threshold: float | None = None, timeout: float = 300, on_task=None) -> dict:
     """Run every task of a pack against one model, scoring each answer and tracking per-field hits for json checks.
 
     Returns {"summary": <leaderboard row>, "episodes": [...]}; `on_task`, if given, is called with a small
-    progress line per task (the same shape ollama_eval.py prints for live progress).
+    progress line per task (the same shape ollama_eval.py prints for live progress). When `threshold` is
+    given (percent, 0–100) the summary carries that threshold and a `passed` flag; otherwise it carries neither.
     """
     import text_tasks
     episodes = []
@@ -249,4 +258,4 @@ def run_pack(model: str, pack, *, timeout: float = 300, on_task=None) -> dict:
         if on_task:
             on_task({"task": task.task_id, "passed": result["passed"], "read": reply["read"],
                      "written": reply["written"]})
-    return {"summary": summarize_pack(pack, episodes), "episodes": episodes}
+    return {"summary": summarize_pack(pack, episodes, threshold=threshold), "episodes": episodes}

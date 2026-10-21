@@ -489,6 +489,54 @@ def test_ollama_eval_pack_writes_a_result_file(tmp_path, monkeypatch):
     assert len(payload["episodes"]) == 2
 
 
+# ---------------------------------------------------------------- release gate on a pack run (B-12)
+
+@pytest.fixture()
+def parrot_generate(monkeypatch):
+    """Answer every task with the prompt's last line, so B1_PACK scores exactly 1/2 (score 0.5 = 50%)."""
+    monkeypatch.setattr(local_models, "generate", lambda model, prompt, **kw:
+                        {"text": prompt.strip().splitlines()[-1], "read": 40, "written": 12, "seconds": 0.1})
+
+
+def test_run_pack_reports_pass_when_score_meets_threshold(parrot_generate):
+    s = local_models.run_pack("fake:latest", task_packs.validate_pack(B1_PACK), threshold=50)["summary"]
+    assert s["score"] == 0.5 and s["threshold"] == 50 and s["passed"] is True  # 50% meets a 50% gate
+
+
+def test_run_pack_reports_fail_when_score_below_threshold(parrot_generate):
+    s = local_models.run_pack("fake:latest", task_packs.validate_pack(B1_PACK), threshold=75)["summary"]
+    assert s["score"] == 0.5 and s["threshold"] == 75 and s["passed"] is False  # 50% misses a 75% gate
+
+
+def test_run_pack_without_threshold_reports_no_pass_or_fail(parrot_generate):
+    s = local_models.run_pack("fake:latest", task_packs.validate_pack(B1_PACK))["summary"]
+    assert "threshold" not in s and "passed" not in s  # no gate configured → neither a pass nor a fail
+
+
+def test_ollama_eval_pack_writes_threshold_and_passed(tmp_path, parrot_generate):
+    pack_file = tmp_path / "b1.json"
+    pack_file.write_text(json.dumps(B1_PACK))
+    output = tmp_path / "result.json"
+    assert ollama_eval.run_pack("fake:latest", str(pack_file), output, threshold=40) == 0
+    summary = json.loads(output.read_text())["summary"]
+    assert summary["threshold"] == 40 and summary["passed"] is True  # 50% clears a 40% gate, persisted to the file
+    # without a threshold the written result carries neither field
+    bare = tmp_path / "bare.json"
+    assert ollama_eval.run_pack("fake:latest", str(pack_file), bare) == 0
+    assert "threshold" not in json.loads(bare.read_text())["summary"]
+
+
+@pytest.mark.parametrize("raw, expected", [(0, 0.0), (100, 100.0), (72.5, 72.5), (None, None), ("", None)])
+def test_clean_threshold_accepts_valid_values_and_blanks(raw, expected):
+    assert lab.clean_threshold(raw) == expected
+
+
+@pytest.mark.parametrize("raw, message", [(150, "between 0 and 100"), (-1, "between 0 and 100"), ("hot", "must be a number")])
+def test_clean_threshold_rejects_out_of_range_and_non_numeric(raw, message):
+    with pytest.raises(lab.LabError, match=message):
+        lab.clean_threshold(raw)
+
+
 # ---------------------------------------------------------------- Models page
 
 @pytest.fixture()
@@ -571,6 +619,32 @@ def test_local_runs_serves_per_pack_leaderboard_rows(models_server, tmp_path, mo
     assert data["reference"] is not None  # packs sit alongside the course/levels runs, nothing breaks
 
 
+def test_local_runs_row_carries_pass_fail_for_the_models_tab(tmp_path, monkeypatch, parrot_generate):
+    """local_runs() surfaces threshold and the passed flag on a finished pack row — the two fields the Models
+    tab renders as its pass/fail badge; a run with no threshold carries neither (B-12). parrot scores b1 at 50%."""
+    local = tmp_path / "local-models"
+    monkeypatch.setattr(lab, "LOCAL", local)
+    pack_file = tmp_path / "b1.json"
+    pack_file.write_text(json.dumps(B1_PACK))
+
+    def stage(run_id, threshold):
+        folder = local / run_id
+        folder.mkdir(parents=True)
+        (folder / "run.json").write_text(json.dumps(
+            {"id": run_id, "model": "fake:latest", "set": "pack", "pack_id": "b1",
+             "pack_name": "Bookkeeping B1", "total": 2, "created": "2026-10-21T00:00:00"}))
+        assert ollama_eval.run_pack("fake:latest", str(pack_file), folder / "result.json", threshold=threshold) == 0
+
+    stage("pass-40", 40)    # 50% clears a 40% gate
+    stage("fail-75", 75)    # 50% misses a 75% gate
+    stage("bare-00", None)  # no gate configured
+
+    rows = {r["id"]: r["summary"] for r in lab.local_runs()}
+    assert rows["pass-40"]["threshold"] == 40 and rows["pass-40"]["passed"] is True
+    assert rows["fail-75"]["threshold"] == 75 and rows["fail-75"]["passed"] is False
+    assert "threshold" not in rows["bare-00"] and "passed" not in rows["bare-00"]  # neither → badge hidden
+
+
 def test_pack_run_rejects_unknown_and_empty_pack(models_server, tmp_path, monkeypatch):
     packs = tmp_path / "packs"
     packs.mkdir()
@@ -581,3 +655,20 @@ def test_pack_run_rejects_unknown_and_empty_pack(models_server, tmp_path, monkey
     status, _ = request(models_server, "POST", "/api/local-runs",
                        {"models": ["fake:latest"], "set": "pack", "pack": ""})
     assert status == 400
+
+
+def test_pack_run_rejects_an_invalid_threshold(models_server, tmp_path, monkeypatch):
+    packs = tmp_path / "packs"
+    packs.mkdir()
+    (packs / "b1.json").write_text(json.dumps(B1_PACK))
+    monkeypatch.setattr(lab, "PACKS", packs)
+    # out of range and non-numeric thresholds are rejected before the pack is queued, like the other settings
+    for bad in (150, -5, "soon"):
+        status, data = request(models_server, "POST", "/api/local-runs",
+                               {"models": ["fake:latest"], "set": "pack", "pack": "b1", "threshold": bad})
+        assert status == 400 and "threshold" in data["error"].lower()
+    # a valid threshold is accepted; omitting one is also fine (no gate configured)
+    status, _ = request(models_server, "POST", "/api/local-runs",
+                        {"models": ["fake:latest"], "set": "pack", "pack": "b1", "threshold": 60})
+    assert status == 200
+    lab.JOB.stop()

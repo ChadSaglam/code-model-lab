@@ -40,13 +40,18 @@ def summarize(episodes: list[dict], seconds: float) -> dict:
             "tokens_per_second": round(written / max(1e-9, sum(e["seconds"] for e in episodes)), 1)}
 
 
-def run_pack(model: str, pack_path: str | None, output: Path) -> int:
-    """Run a task pack (B-04) against a model and write a per-pack result file for the Models leaderboard."""
+def run_pack(model: str, pack_path: str | None, output: Path, threshold: float | None = None) -> int:
+    """Run a task pack (B-04) against a model and write a per-pack result file for the Models leaderboard.
+
+    When `threshold` is given (percent, 0–100) the written summary carries the threshold and a `passed`
+    release-gate flag; without one it carries neither.
+    """
     import task_packs
     if not pack_path:
         raise SystemExit("--pack is required for a pack run")
     pack = task_packs.load_pack(pack_path)
-    result = local_models.run_pack(model, pack, on_task=lambda line: print(json.dumps(line), flush=True))
+    result = local_models.run_pack(model, pack, threshold=threshold,
+                                   on_task=lambda line: print(json.dumps(line), flush=True))
     payload = {"schema_version": "1.0", "status": "complete", "model": model, "set": "pack",
                "pack_id": pack.pack_id, "summary": result["summary"], "episodes": result["episodes"]}
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -61,10 +66,11 @@ def main() -> int:
     parser.add_argument("--set", choices=("course", "levels", "pack"), required=True)
     parser.add_argument("--levels", default="1,2,3,4")
     parser.add_argument("--pack")
+    parser.add_argument("--threshold", type=float)  # optional release gate for a pack run (percent, 0–100)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.set == "pack":
-        return run_pack(args.model, args.pack, args.output)
+        return run_pack(args.model, args.pack, args.output, args.threshold)
     levels = ladder.parse_levels(args.levels) if args.set == "levels" else [1]
     level_of = ladder.family_levels()
     tasks = test_set(args.set, levels)
