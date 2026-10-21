@@ -77,7 +77,7 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q
 ```
 
-You should see `307 passed`.
+You should see `347 passed, 1 xfailed`.
 
 **4. Start the lab**
 
@@ -246,13 +246,23 @@ The course code is never modified; the lab only runs it and reads its output. De
 | Test file | Checks |
 |---|---|
 | `tests/test_lab.py` | tokenizer round trip, causal attention, 3 : 1 layer rhythm, expert usage, reference solutions (course) |
+| `tests/test_tokenizer.py` | ByteTokenizer: byte-offset mapping, bos/eos flags, multi-byte UTF-8, decode stop-at-eos and skip-specials rules |
 | `tests/test_evaluator.py` | code verifier (validate_source): rejection rules and type-strict scoring |
+| `tests/test_tasks_corpus.py` | glm53_flash/tasks.py corpus: determinism, prompt shape, split validation and counts, pretraining text |
 | `tests/test_ladder.py` | ladder.py: level parsing, custom-task loading, family/level maps |
 | `tests/test_ladder_levels.py` | ladder.py: level-selection logic (parse_levels, family_rows, family_levels) |
+| `tests/test_ladder_lengths.py` | ladder.lengths(): context and answer-token budgets, floor values, rounding |
+| `tests/test_ladder_stop_rule.py` | ladder.py stop rule (stops_at_function_end): parse gate, indentation, multi-branch functions |
+| `tests/test_text_tasks.py` | text_tasks.py scorer: exact/json/numeric rules at their boundaries, malformed inputs |
 | `tests/test_local_models_extract.py` | answer extraction from model replies and friendly error messages |
+| `tests/test_local_models_check.py` | local_models.check(): sandbox run, type-strict comparison, result shape, runtime errors |
+| `tests/test_try_task_parse.py` | level-5 test-input parser (parse_tests): literals, edge cases, rejection |
+| `tests/test_try_task_validate.py` | try_task.validate(): level-5 acceptance and every rejection path |
+| `tests/test_ollama_eval_summarize.py` | ollama_eval.summarize(): token totals, speed, empty run and zero-duration guard |
 | `tests/test_model_lab.py` | Task Lab levels, level-5 validation, answer extraction, local-model runs, model queues and instruction variants (with a stand-in Ollama), settings validation and the server's safety rules |
 | `tests/test_task_packs.py` | task-pack loading and validation (B-04): valid packs and every rejection path |
-| `tests/test_try_task_parse.py` | level-5 test-input parser (parse_tests): literals, edge cases, rejection |
+| `tests/test_b2_invoices_acceptance.py` | B2 invoice pack acceptance: VAT arithmetic independently verified against each invoice text |
+| `tests/test_analyze_results.py` | scripts/analyze_results.py: sign test, bootstrap interval, family roll-ups |
 | `tests/test_vision.py`, `tests/test_full_25m_vision_digit_pilot.py` | the course's optional image path |
 
 ---

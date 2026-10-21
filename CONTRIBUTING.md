@@ -25,7 +25,7 @@ make dev       # start the lab at http://127.0.0.1:8765
 .venv/bin/python -m pytest -q
 ```
 
-A full pass is `307 passed`. Sixteen of those tests bind a local HTTP port; they pass on a normal
+A full pass is `347 passed, 1 xfailed`. Sixteen of those tests bind a local HTTP port; they pass on a normal
 machine but cannot run where binding a port is blocked — skip them there, do not delete them.
 
 ## Which checks a change must pass
@@ -41,14 +41,24 @@ machine but cannot run where binding a port is blocked — skip them there, do n
 All tests are in `tests/`:
 
 - `test_lab.py` — the model: tokenizer, attention, layer rhythm, experts, reference solutions.
+- `test_tokenizer.py` — ByteTokenizer: byte-offset mapping, bos/eos flags, multi-byte UTF-8, decode rules.
 - `test_evaluator.py` — code verifier (validate_source): rejection rules and type-strict scoring.
+- `test_tasks_corpus.py` — glm53_flash/tasks.py corpus: determinism, prompt shape, split validation.
 - `test_ladder.py` — ladder.py: level parsing, custom-task loading, family/level maps.
 - `test_ladder_levels.py` — ladder.py: level-selection logic (parse_levels, family_rows, family_levels).
+- `test_ladder_lengths.py` — ladder.lengths(): context and answer-token budgets, floor and rounding.
+- `test_ladder_stop_rule.py` — ladder.py stop rule (stops_at_function_end): parse gate, indentation.
+- `test_text_tasks.py` — text_tasks.py scorer: exact/json/numeric rules at their boundaries.
 - `test_local_models_extract.py` — answer extraction from model replies and friendly error messages.
+- `test_local_models_check.py` — local_models.check(): sandbox run, type-strict scoring, result shape.
+- `test_try_task_parse.py` — level-5 test-input parser (parse_tests): literals, edge cases, rejection.
+- `test_try_task_validate.py` — try_task.validate(): level-5 acceptance and every rejection path.
+- `test_ollama_eval_summarize.py` — ollama_eval.summarize(): token totals, speed, zero-duration guard.
 - `test_model_lab.py` — Task Lab levels, level-5 validation, answer extraction, local-model runs,
   model queues and instruction variants (stand-in Ollama), settings validation, server safety rules.
 - `test_task_packs.py` — task-pack loading and validation (B-04): valid packs and every rejection path.
-- `test_try_task_parse.py` — level-5 test-input parser (parse_tests): literals, edge cases, rejection.
+- `test_b2_invoices_acceptance.py` — B2 invoice pack acceptance: VAT arithmetic independently verified.
+- `test_analyze_results.py` — scripts/analyze_results.py: sign test, bootstrap, family roll-ups.
 - `test_vision.py`, `test_full_25m_vision_digit_pilot.py` — the optional image path.
 
 ## Branches and releases
