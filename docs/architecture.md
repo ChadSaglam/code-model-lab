@@ -61,3 +61,4 @@ The Models page stores its tests in `runs/local-models/<id>/` and the models it 
 | [ADR-005](adr/0005-local-control-server-security.md) | Security model for a server that can start processes |
 | [ADR-006](adr/0006-local-models-and-own-tasks.md) | Test local models and your own tasks with the same hidden tests |
 | [ADR-007](adr/0007-models-tab-and-instruction-variants.md) | A separate Models tab; improve local models with instructions before training them |
+| [ADR-008](adr/0008-release-gate-thresholds.md) | Release-gate thresholds for the B1/B2 packs |

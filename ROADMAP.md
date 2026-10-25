@@ -12,7 +12,8 @@ real data are the owner's calls and are not listed here. "Gate:" names what must
 - [ ] B-09 — Account-suggestion service (Gate: B-08, legal check): a service behind a feature flag (off by default) that calls the local Ollama HTTP API with a timeout and a no-suggestion fallback; done when the flag toggles it and the fallback is tested.
 - [ ] B-10 — Suggestion UI with confirm step (Gate: B-09): show the suggestion with a confidence label and Accept / Change / Reject; nothing is booked without a click; done when each action works and only a click books.
 - [ ] B-11 — Suggestion audit log (Gate: B-09): record timestamp, user, input, suggested account, model, prompt version and final decision; done when every suggestion decision is logged and can be read back.
-- [ ] B-13 — False-confident rate (Gate: B-12): measure wrong answers shown with high confidence separately from accuracy; done when the leaderboard reports a false-confident rate per pack.
+- [ ] B-13 — False-confident rate (Gate: B-12): measure wrong answers shown with high confidence separately from accuracy; done when the leaderboard reports a false-confident rate per pack and a run can be checked against the confident-accuracy target in ADR-008.
+- [ ] B-15 — No-regression check (Gate: B-12): record the scores of the model in use and fail a pack run whose candidate scores lower (ADR-008 rule 2); done when the leaderboard shows the reference score and a regression fails the run.
 - [ ] B-14 — Varying constants and held-out task types: as noted in the README limitations and ADR-004, add tasks whose constants vary and task types held out from training; done when they run in Task Lab and the leaderboard reflects them.
 
 ## Done
